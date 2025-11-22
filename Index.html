@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Life Wheel Review</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f6f6f6;
+    }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin: 6px 0;
+    }
+    .info {
+      font-size: 12px;
+      color: #555;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .domain {
+      background: #fff;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      padding: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .domain-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .domain-name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .score-buttons {
+      display: inline-flex;
+      gap: 4px;
+      font-size: 12px;
+      align-items: center;
+    }
+    .score-buttons span.label {
+      margin-right: 4px;
+    }
+    .score-buttons button {
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 2px 6px;
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    .score-buttons button.active {
+      background: #007aff;
+      color: white;
+      border-color: #007aff;
+    }
+    .domain-body {
+      margin-top: 6px;
+      display: none;
+      border-top: 1px solid #eee;
+      padding-top: 6px;
+    }
+    .subdomain {
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed #ddd;
+    }
+    .subdomain:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    .sub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .sub-name {
+      font-weight: 500;
+    }
+    .menu-toggle {
+      font-size: 11px;
+      color: #007aff;
+      background: none;
+      border: none;
+      padding: 0 0 0 8px;
+      cursor: pointer;
+    }
+    textarea {
+      width: 100%;
+      min-height: 60px;
+      margin-top: 4px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      padding: 4px;
+      resize: vertical;
+    }
+    .small-note {
+      font-size: 11px;
+      margin-top: 4px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <h1>Life Wheel</h1>
+  <div class="info">
+    Weekly: set <b>domain</b> scores (0–3).<br>
+    Monthly: set <b>sub-domain</b> scores and tweak menus.
+  </div>
+  <div id="app"></div>
+
+  <script>
+    const STORAGE_KEY = "jonathan_life_wheel_v1";
+
+    const defaultData = {
+      domains: [
+        {
+          name: "Mental",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Logic",
+              monthlyScore: null,
+              menu: "Solve a small puzzle or logic problem.\nRead a page of something intellectually challenging."
+            },
+            {
+              name: "Knowledge",
+              monthlyScore: null,
+              menu: "Read a few pages of a non-fiction book.\nListen to a short podcast segment.\nLearn one new fact or concept."
+            },
+            {
+              name: "Skill",
+              monthlyScore: null,
+              menu: "Practice a skill for 10 minutes.\nWatch a short tutorial.\nDo a micro-upgrade at work."
+            },
+            {
+              name: "Action",
+              monthlyScore: null,
+              menu: "Do one meaningful task you’ve been putting off.\nClear one small item from your backlog."
+            }
+          ]
+        },
+        {
+          name: "Physical",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Strength",
+              monthlyScore: null,
+              menu: "One brief strength set (push-ups / squats / etc.).\nGym session."
+            },
+            {
+              name: "Stamina",
+              monthlyScore: null,
+              menu: "Brisk 10–20 minute walk.\nShort conditioning / cardio session."
+            },
+            {
+              name: "Health",
+              monthlyScore: null,
+              menu: "Track sleep / hydration.\nCook a healthy meal.\nTake supplements."
+            },
+            {
+              name: "Mobility",
+              monthlyScore: null,
+              menu: "10 minutes stretching.\nShort yoga / mobility flow."
+            }
+          ]
+        },
+        {
+          name: "Emotional",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Resilience",
+              monthlyScore: null,
+              menu: "5 minutes journaling.\nName what’s bothering you in one sentence.\nDo a short grounding exercise."
+            },
+            {
+              name: "Joy",
+              monthlyScore: null,
+              menu: "Do something fun/silly with the kids.\nListen to music you love.\nSavour a good coffee."
+            },
+            {
+              name: "Stress Management",
+              monthlyScore: null,
+              menu: "10-minute decompress walk.\n5 deep breaths.\n30 minutes phone-free."
+            },
+            {
+              name: "Identity",
+              monthlyScore: null,
+              menu: "Write a line about who you’re becoming.\nRead something meaningful.\nDo one small act aligned to your values."
+            }
+          ]
+        },
+        {
+          name: "Spiritual",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Belief",
+              monthlyScore: null,
+              menu: "Reflect on a principle or value.\nRead a page of philosophy."
+            },
+            {
+              name: "Philosophy",
+              monthlyScore: null,
+              menu: "Summarise one Stoic idea.\nAsk: 'What is in my control here?'"
+            },
+            {
+              name: "Death Awareness",
+              monthlyScore: null,
+              menu: "10-second memento mori reflection.\nImagine 80-year-old you judging today."
+            },
+            {
+              name: "Virtue",
+              monthlyScore: null,
+              menu: "Do one act of kindness.\nChoose the harder-but-better option once."
+            },
+            {
+              name: "Self-Control",
+              monthlyScore: null,
+              menu: "Skip one unnecessary comfort.\nHold your tongue / reframe one annoyance."
+            }
+          ]
+        },
+        {
+          name: "Social",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Family",
+              monthlyScore: null,
+              menu: "10 minutes device-free presence.\nOne micro-ritual (bedtime chat, story, hug)."
+            },
+            {
+              name: "Friends",
+              monthlyScore: null,
+              menu: "Send a voice note.\nMessage a friend to check in."
+            },
+            {
+              name: "Colleagues",
+              monthlyScore: null,
+              menu: "Offer help or appreciation.\nInvest a moment in one relationship."
+            },
+            {
+              name: "Civic Contribution",
+              monthlyScore: null,
+              menu: "Tiny act of service.\nSmall donation.\nHelp someone locally."
+            }
+          ]
+        },
+        {
+          name: "Environmental",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Sustainability",
+              monthlyScore: null,
+              menu: "Choose a greener option (walk, reuse, reduce)."
+            },
+            {
+              name: "Reducing Impact",
+              monthlyScore: null,
+              menu: "Declutter one small area.\nRecycle something.\nAvoid food waste once."
+            }
+          ]
+        },
+        {
+          name: "Work & Purpose",
+          weeklyScore: null,
+          subdomains: [
+            {
+              name: "Career",
+              monthlyScore: null,
+              menu: "Do one task that moves you forward.\nClarify your next step for the week."
+            },
+            {
+              name: "Mastery",
+              monthlyScore: null,
+              menu: "Improve a craft/skill.\nReview one piece of work critically."
+            },
+            {
+              name: "Finance",
+              monthlyScore: null,
+              menu: "Quick check-in on accounts.\nOne simple money move (no big restructures)."
+            },
+            {
+              name: "Legacy",
+              monthlyScore: null,
+              menu: "Record a memory.\nDo something future-you or the kids would value."
+            }
+          ]
+        }
+      ]
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return JSON.parse(JSON.stringify(defaultData));
+        const parsed = JSON.parse(raw);
+        if (!parsed.domains) return JSON.parse(JSON.stringify(defaultData));
+        return parsed;
+      } catch {
+        return JSON.parse(JSON.stringify(defaultData));
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    let state = loadState();
+
+    function render() {
+      const app = document.getElementById("app");
+      app.innerHTML = "";
+      state.domains.forEach((domain, dIndex) => {
+        const domDiv = document.createElement("div");
+        domDiv.className = "domain";
+
+        const header = document.createElement("div");
+        header.className = "domain-header";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "domain-name";
+        nameSpan.textContent = domain.name;
+
+        const scoreDiv = document.createElement("div");
+        scoreDiv.className = "score-buttons";
+
+        const label = document.createElement("span");
+        label.className = "label";
+        label.textContent = "Weekly:";
+        scoreDiv.appendChild(label);
+
+        [0,1,2,3].forEach(val => {
+          const btn = document.createElement("button");
+          btn.textContent = val;
+          if (domain.weeklyScore === val) btn.classList.add("active");
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            state.domains[dIndex].weeklyScore = val;
+            saveState(state);
+            render();
+          });
+          scoreDiv.appendChild(btn);
+        });
+
+        header.appendChild(nameSpan);
+        header.appendChild(scoreDiv);
+
+        const body = document.createElement("div");
+        body.className = "domain-body";
+
+        header.addEventListener("click", () => {
+          body.style.display = (body.style.display === "none" || body.style.display === "") ? "block" : "none";
+        });
+
+        domain.subdomains.forEach((sub, sIndex) => {
+          const subDiv = document.createElement("div");
+          subDiv.className = "subdomain";
+
+          const subHeader = document.createElement("div");
+          subHeader.className = "sub-header";
+
+          const subName = document.createElement("span");
+          subName.className = "sub-name";
+          subName.textContent = sub.name;
+
+          const subScoreDiv = document.createElement("div");
+          subScoreDiv.className = "score-buttons";
+
+          const sLabel = document.createElement("span");
+          sLabel.className = "label";
+          sLabel.textContent = "Monthly:";
+          subScoreDiv.appendChild(sLabel);
+
+          [0,1,2,3].forEach(val => {
+            const btn = document.createElement("button");
+            btn.textContent = val;
+            if (sub.monthlyScore === val) btn.classList.add("active");
+            btn.addEventListener("click", () => {
+              state.domains[dIndex].subdomains[sIndex].monthlyScore = val;
+              saveState(state);
+              render();
+            });
+            subScoreDiv.appendChild(btn);
+          });
+
+          const menuBtn = document.createElement("button");
+          menuBtn.className = "menu-toggle";
+          menuBtn.textContent = "Menu";
+          menuBtn.addEventListener("click", () => {
+            textarea.style.display = textarea.style.display === "none" ? "block" : "none";
+          });
+
+          subHeader.appendChild(subName);
+          subHeader.appendChild(subScoreDiv);
+          subHeader.appendChild(menuBtn);
+
+          const textarea = document.createElement("textarea");
+          textarea.value = sub.menu || "";
+          textarea.style.display = "none";
+          textarea.addEventListener("change", () => {
+            state.domains[dIndex].subdomains[sIndex].menu = textarea.value;
+            saveState(state);
+          });
+
+          subDiv.appendChild(subHeader);
+          subDiv.appendChild(textarea);
+
+          body.appendChild(subDiv);
+        });
+
+        const note = document.createElement("div");
+        note.className = "small-note";
+        note.textContent = "Tip: tap the domain name to show/hide details.";
+        body.appendChild(note);
+
+        domDiv.appendChild(header);
+        domDiv.appendChild(body);
+        app.appendChild(domDiv);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
