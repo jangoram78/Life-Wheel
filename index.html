@@ -1,436 +1,114 @@
-head>
-  <meta charset="UTF-8" />
-  <title>Life Wheel Review</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 10px;
-      background: #f6f6f6;
-    }
-    h1 {
-      font-size: 20px;
-      text-align: center;
-      margin: 6px 0;
-    }
-    .info {
-      font-size: 12px;
-      color: #555;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .domain {
-      background: #fff;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      padding: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .domain-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-    }
-    .domain-name {
-      font-weight: 600;
-      font-size: 16px;
-    }
-    .score-buttons {
-      display: inline-flex;
-      gap: 4px;
-      font-size: 12px;
-      align-items: center;
-    }
-    .score-buttons span.label {
-      margin-right: 4px;
-    }
-    .score-buttons button {
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      padding: 2px 6px;
-      background: #f0f0f0;
-      cursor: pointer;
-    }
-    .score-buttons button.active {
-      background: #007aff;
-      color: white;
-      border-color: #007aff;
-    }
-    .domain-body {
-      margin-top: 6px;
-      display: none;
-      border-top: 1px solid #eee;
-      padding-top: 6px;
-    }
-    .subdomain {
-      margin-bottom: 6px;
-      padding-bottom: 4px;
-      border-bottom: 1px dashed #ddd;
-    }
-    .subdomain:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-    .sub-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-    }
-    .sub-name {
-      font-weight: 500;
-    }
-    .menu-toggle {
-      font-size: 11px;
-      color: #007aff;
-      background: none;
-      border: none;
-      padding: 0 0 0 8px;
-      cursor: pointer;
-    }
-    textarea {
-      width: 100%;
-      min-height: 60px;
-      margin-top: 4px;
-      font-size: 12px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      padding: 4px;
-      resize: vertical;
-    }
-    .small-note {
-      font-size: 11px;
-      margin-top: 4px;
-      color: #777;
-    }
-  </style>
-</head>
-<body>
-  <h1>Life Wheel</h1>
-  <div class="info">
-    Weekly: set <b>domain</b> scores (0–3).<br>
-    Monthly: set <b>sub-domain</b> scores and tweak menus.
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Life Wheel</title><style>
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter",system-ui,sans-serif;background:#f4f7fa;color:#111;overscroll-behavior:none}body{display:flex;flex-direction:column}
+.app{flex:1;display:flex;flex-direction:column;max-width:480px;margin:0 auto;padding:12px 12px 72px}
+.app-header{padding:4px 4px 8px}
+.app-title{font-size:20px;font-weight:600;margin-bottom:2px}
+.app-subtitle{font-size:12px;color:#667;opacity:.9}
+.view{display:none;flex:1;overflow-y:auto;padding-bottom:48px}
+.view.active{display:block}
+.section{margin-top:8px;margin-bottom:8px}
+.section-title{font-size:14px;font-weight:600;margin-bottom:4px;color:#445}
+.card{background:#fff;border-radius:16px;box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);padding:10px 12px;margin-bottom:8px}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.card-title{font-size:14px;font-weight:500;color:#111}
+.card-value{font-size:13px;color:#456;margin-left:8px}
+.slider-row{display:flex;flex-direction:column;gap:4px}
+.slider-row label{font-size:12px;color:#445}
+.slider-row input[type=range]{width:100%;-webkit-appearance:none;height:26px;background:transparent}
+.slider-row input[type=range]:focus{outline:none}
+.slider-row input[type=range]::-webkit-slider-runnable-track{height:6px;background:linear-gradient(90deg,#5da8ff,#a4c8ff);border-radius:999px}
+.slider-row input[type=range]::-moz-range-track{height:6px;background:linear-gradient(90deg,#5da8ff,#a4c8ff);border-radius:999px}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:24px;width:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(15,23,42,.25);margin-top:-9px;border:1px solid rgba(148,163,184,.6)}
+.slider-row input[type=range]::-moz-range-thumb{height:20px;width:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(15,23,42,.25);border:1px solid rgba(148,163,184,.6)}
+.slider-value-label{font-size:11px;color:#667;text-align:right}
+.radar-wrapper{background:#fff;border-radius:16px;box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);padding:10px 8px;margin-bottom:8px}
+.radar-title{font-size:13px;font-weight:500;color:#111;margin-bottom:4px}
+.radar-canvas-wrap{width:100%;position:relative}
+.radar-canvas-wrap canvas{width:100%;height:auto;display:block}
+.small-note{font-size:11px;color:#889;margin-top:4px}
+.settings-group{margin-bottom:10px}
+.settings-row{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.settings-row input{flex:1;border-radius:10px;border:1px solid #cbd5f1;padding:6px 8px;font-size:12px}
+.settings-row button{border:none;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:11px;padding:4px 8px}
+.settings-row button.add{background:#dcfce7;color:#166534}
+.settings-hint{font-size:11px;color:#667;margin-bottom:4px}
+.btn{border:none;border-radius:999px;padding:6px 10px;font-size:12px;background:#5da8ff;color:#fff}
+.btn.outline{background:transparent;color:#2563eb;border:1px solid #bfdbfe}
+.toast{position:fixed;left:50%;bottom:68px;transform:translateX(-50%);background:#111;color:#fff;font-size:12px;padding:6px 12px;border-radius:999px;box-shadow:0 10px 25px rgba(15,23,42,.3);opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:50}
+.toast.visible{opacity:1;transform:translateX(-50%) translateY(-4px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;padding:4px 10px 10px;z-index:40}
+.tabbar-inner{max-width:480px;margin:0 auto;background:rgba(255,255,255,.88);border-radius:20px;box-shadow:0 10px 30px rgba(15,23,42,.18),0 0 0 1px rgba(148,163,184,.25);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;padding:4px}
+.tab-btn{flex:1;border:none;background:transparent;padding:4px 2px;border-radius:999px;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.tab-pill{border-radius:999px;padding:4px 10px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:background .16s ease,transform .16s ease}
+.tab-icon{font-size:14px;line-height:1}
+.tab-label{font-size:11px;white-space:nowrap}
+.tab-btn.active .tab-pill{background:rgba(93,168,255,.16);transform:translateY(-1px)}
+.tab-btn.active .tab-label{font-weight:600;color:#1d4ed8}
+@supports not (backdrop-filter:blur(10px)){.tabbar-inner{background:#fff}}
+</style></head><body>
+<div class="app">
+  <div class="app-header"><div class="app-title">Life Wheel</div><div class="app-subtitle" id="periodLabel"></div></div>
+  <div id="weeklyView" class="view active">
+    <div class="section">
+      <div class="radar-wrapper">
+        <div class="radar-title">Weekly domain overview</div>
+        <div class="radar-canvas-wrap"><canvas id="weeklyRadar"></canvas></div>
+        <div class="small-note">Showing this week's domain scores (0–10).</div>
+      </div>
+    </div>
+    <div class="section"><div class="section-title">Weekly scores</div><div id="weeklyDomains"></div></div>
   </div>
-  <div id="app"></div>
-
-  <script>
-    const STORAGE_KEY = "jonathan_life_wheel_v1";
-
-    const defaultData = {
-      domains: [
-        {
-          name: "Mental",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Logic",
-              monthlyScore: null,
-              menu: "Solve a small puzzle or logic problem.\nRead a page of something intellectually challenging."
-            },
-            {
-              name: "Knowledge",
-              monthlyScore: null,
-              menu: "Read a few pages of a non-fiction book.\nListen to a short podcast segment.\nLearn one new fact or concept."
-            },
-            {
-              name: "Skill",
-              monthlyScore: null,
-              menu: "Practice a skill for 10 minutes.\nWatch a short tutorial.\nDo a micro-upgrade at work."
-            },
-            {
-              name: "Action",
-              monthlyScore: null,
-              menu: "Do one meaningful task you’ve been putting off.\nClear one small item from your backlog."
-            }
-          ]
-        },
-        {
-          name: "Physical",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Strength",
-              monthlyScore: null,
-              menu: "One brief strength set (push-ups / squats / etc.).\nGym session."
-            },
-            {
-              name: "Stamina",
-              monthlyScore: null,
-              menu: "Brisk 10–20 minute walk.\nShort conditioning / cardio session."
-            },
-            {
-              name: "Health",
-              monthlyScore: null,
-              menu: "Track sleep / hydration.\nCook a healthy meal.\nTake supplements."
-            },
-            {
-              name: "Mobility",
-              monthlyScore: null,
-              menu: "10 minutes stretching.\nShort yoga / mobility flow."
-            }
-          ]
-        },
-        {
-          name: "Emotional",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Resilience",
-              monthlyScore: null,
-              menu: "5 minutes journaling.\nName what’s bothering you in one sentence.\nDo a short grounding exercise."
-            },
-            {
-              name: "Joy",
-              monthlyScore: null,
-              menu: "Do something fun/silly with the kids.\nListen to music you love.\nSavour a good coffee."
-            },
-            {
-              name: "Stress Management",
-              monthlyScore: null,
-              menu: "10-minute decompress walk.\n5 deep breaths.\n30 minutes phone-free."
-            },
-            {
-              name: "Identity",
-              monthlyScore: null,
-              menu: "Write a line about who you’re becoming.\nRead something meaningful.\nDo one small act aligned to your values."
-            }
-          ]
-        },
-        {
-          name: "Spiritual",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Belief",
-              monthlyScore: null,
-              menu: "Reflect on a principle or value.\nRead a page of philosophy."
-            },
-            {
-              name: "Philosophy",
-              monthlyScore: null,
-              menu: "Summarise one Stoic idea.\nAsk: 'What is in my control here?'"
-            },
-            {
-              name: "Death Awareness",
-              monthlyScore: null,
-              menu: "10-second memento mori reflection.\nImagine 80-year-old you judging today."
-            },
-            {
-              name: "Virtue",
-              monthlyScore: null,
-              menu: "Do one act of kindness.\nChoose the harder-but-better option once."
-            },
-            {
-              name: "Self-Control",
-              monthlyScore: null,
-              menu: "Skip one unnecessary comfort.\nHold your tongue / reframe one annoyance."
-            }
-          ]
-        },
-        {
-          name: "Social",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Family",
-              monthlyScore: null,
-              menu: "10 minutes device-free presence.\nOne micro-ritual (bedtime chat, story, hug)."
-            },
-            {
-              name: "Friends",
-              monthlyScore: null,
-              menu: "Send a voice note.\nMessage a friend to check in."
-            },
-            {
-              name: "Colleagues",
-              monthlyScore: null,
-              menu: "Offer help or appreciation.\nInvest a moment in one relationship."
-            },
-            {
-              name: "Civic Contribution",
-              monthlyScore: null,
-              menu: "Tiny act of service.\nSmall donation.\nHelp someone locally."
-            }
-          ]
-        },
-        {
-          name: "Environmental",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Sustainability",
-              monthlyScore: null,
-              menu: "Choose a greener option (walk, reuse, reduce)."
-            },
-            {
-              name: "Reducing Impact",
-              monthlyScore: null,
-              menu: "Declutter one small area.\nRecycle something.\nAvoid food waste once."
-            }
-          ]
-        },
-        {
-          name: "Work & Purpose",
-          weeklyScore: null,
-          subdomains: [
-            {
-              name: "Career",
-              monthlyScore: null,
-              menu: "Do one task that moves you forward.\nClarify your next step for the week."
-            },
-            {
-              name: "Mastery",
-              monthlyScore: null,
-              menu: "Improve a craft/skill.\nReview one piece of work critically."
-            },
-            {
-              name: "Finance",
-              monthlyScore: null,
-              menu: "Quick check-in on accounts.\nOne simple money move (no big restructures)."
-            },
-            {
-              name: "Legacy",
-              monthlyScore: null,
-              menu: "Record a memory.\nDo something future-you or the kids would value."
-            }
-          ]
-        }
-      ]
-    };
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return JSON.parse(JSON.stringify(defaultData));
-        const parsed = JSON.parse(raw);
-        if (!parsed.domains) return JSON.parse(JSON.stringify(defaultData));
-        return parsed;
-      } catch {
-        return JSON.parse(JSON.stringify(defaultData));
-      }
-    }
-
-    function saveState(state) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-
-    let state = loadState();
-
-    function render() {
-      const app = document.getElementById("app");
-      app.innerHTML = "";
-      state.domains.forEach((domain, dIndex) => {
-        const domDiv = document.createElement("div");
-        domDiv.className = "domain";
-
-        const header = document.createElement("div");
-        header.className = "domain-header";
-
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "domain-name";
-        nameSpan.textContent = domain.name;
-
-        const scoreDiv = document.createElement("div");
-        scoreDiv.className = "score-buttons";
-
-        const label = document.createElement("span");
-        label.className = "label";
-        label.textContent = "Weekly:";
-        scoreDiv.appendChild(label);
-
-        [0,1,2,3].forEach(val => {
-          const btn = document.createElement("button");
-          btn.textContent = val;
-          if (domain.weeklyScore === val) btn.classList.add("active");
-          btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            state.domains[dIndex].weeklyScore = val;
-            saveState(state);
-            render();
-          });
-          scoreDiv.appendChild(btn);
-        });
-
-        header.appendChild(nameSpan);
-        header.appendChild(scoreDiv);
-
-        const body = document.createElement("div");
-        body.className = "domain-body";
-
-        header.addEventListener("click", () => {
-          body.style.display = (body.style.display === "none" || body.style.display === "") ? "block" : "none";
-        });
-
-        domain.subdomains.forEach((sub, sIndex) => {
-          const subDiv = document.createElement("div");
-          subDiv.className = "subdomain";
-
-          const subHeader = document.createElement("div");
-          subHeader.className = "sub-header";
-
-          const subName = document.createElement("span");
-          subName.className = "sub-name";
-          subName.textContent = sub.name;
-
-          const subScoreDiv = document.createElement("div");
-          subScoreDiv.className = "score-buttons";
-
-          const sLabel = document.createElement("span");
-          sLabel.className = "label";
-          sLabel.textContent = "Monthly:";
-          subScoreDiv.appendChild(sLabel);
-
-          [0,1,2,3].forEach(val => {
-            const btn = document.createElement("button");
-            btn.textContent = val;
-            if (sub.monthlyScore === val) btn.classList.add("active");
-            btn.addEventListener("click", () => {
-              state.domains[dIndex].subdomains[sIndex].monthlyScore = val;
-              saveState(state);
-              render();
-            });
-            subScoreDiv.appendChild(btn);
-          });
-
-          const menuBtn = document.createElement("button");
-          menuBtn.className = "menu-toggle";
-          menuBtn.textContent = "Menu";
-          menuBtn.addEventListener("click", () => {
-            textarea.style.display = textarea.style.display === "none" ? "block" : "none";
-          });
-
-          subHeader.appendChild(subName);
-          subHeader.appendChild(subScoreDiv);
-          subHeader.appendChild(menuBtn);
-
-          const textarea = document.createElement("textarea");
-          textarea.value = sub.menu || "";
-          textarea.style.display = "none";
-          textarea.addEventListener("change", () => {
-            state.domains[dIndex].subdomains[sIndex].menu = textarea.value;
-            saveState(state);
-          });
-
-          subDiv.appendChild(subHeader);
-          subDiv.appendChild(textarea);
-
-          body.appendChild(subDiv);
-        });
-
-        const note = document.createElement("div");
-        note.className = "small-note";
-        note.textContent = "Tip: tap the domain name to show/hide details.";
-        body.appendChild(note);
-
-        domDiv.appendChild(header);
-        domDiv.appendChild(body);
-        app.appendChild(domDiv);
-      });
-    }
-
-    render();
-  </script>
-</body>
-</html>
+  <div id="monthlyView" class="view">
+    <div class="section"><div class="section-title">Monthly subdomain scores</div><div id="monthlyDomains"></div></div>
+  </div>
+  <div id="settingsView" class="view">
+    <div class="section">
+      <div class="section-title">Domains</div>
+      <div class="settings-hint">Edit your life domains. Changes affect weekly and monthly views.</div>
+      <div id="settingsDomains"></div>
+      <button id="addDomainBtn" class="btn" style="margin-top:4px;">+ Add domain</button>
+    </div>
+    <div class="section">
+      <div class="section-title">Info</div>
+      <div class="card">
+        <div class="small-note">Data is stored locally on this device using your browser's storage. Clearing site data will reset your scores.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast">Saved ✓</div>
+<div class="tabbar">
+  <div class="tabbar-inner">
+    <button class="tab-btn active" data-view="weeklyView"><div class="tab-pill"><div class="tab-icon">🗓️</div><div class="tab-label">Weekly</div></div></button>
+    <button class="tab-btn" data-view="monthlyView"><div class="tab-pill"><div class="tab-icon">📊</div><div class="tab-label">Monthly</div></div></button>
+    <button class="tab-btn" data-view="settingsView"><div class="tab-pill"><div class="tab-icon">⚙️</div><div class="tab-label">Settings</div></div></button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+var STORAGE_KEY_DOMAINS="lw_domains_v1",STORAGE_KEY_WEEKLY="lw_weekly_scores_v1",STORAGE_KEY_MONTHLY="lw_monthly_scores_v1";
+var defaultDomains=[{name:"Health",sub:["Physical","Mental","Sleep"]},{name:"Family & Relationships",sub:["Partner","Children","Friends"]},{name:"Career & Work",sub:["Progress","Satisfaction","Balance"]},{name:"Finances",sub:["Stability","Growth","Planning"]},{name:"Personal Growth",sub:["Learning","Reflection","Skills"]},{name:"Fun & Hobbies",sub:["Play","Creativity","Experiences"]},{name:"Environment",sub:["Home","Work space","Local"]},{name:"Contribution",sub:["Helping others","Community","Legacy"]}];
+function loadJSON(key,fallback){try{var raw=localStorage.getItem(key);if(!raw)return fallback;var parsed=JSON.parse(raw);return parsed||fallback}catch(e){return fallback}}
+function saveJSON(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
+function getWeekKey(){var d=new Date(),year=d.getFullYear(),oneJan=new Date(year,0,1);var dayMS=24*60*60*1000;var diff=d-oneJan;var day=oneJan.getDay()||7;var week=Math.ceil(((diff/dayMS)+day)/7);return year+"-W"+(week<10?"0"+week:week)}
+function getMonthKey(){var d=new Date(),year=d.getFullYear(),m=d.getMonth()+1;return year+"-"+(m<10?"0"+m:m)}
+var state={domains:[],weeklyScores:{},monthlyScores:{},weekKey:getWeekKey(),monthKey:getMonthKey()};
+function initState(){var storedDomains=loadJSON(STORAGE_KEY_DOMAINS,null);if(!storedDomains||!Array.isArray(storedDomains)||!storedDomains.length){state.domains=defaultDomains.map(function(d){return{name:d.name,sub:d.sub.slice(0)}});saveJSON(STORAGE_KEY_DOMAINS,state.domains)}else{state.domains=storedDomains}
+state.weeklyScores=loadJSON(STORAGE_KEY_WEEKLY,{});state.monthlyScores=loadJSON(STORAGE_KEY_MONTHLY,{});if(!state.weeklyScores[state.weekKey])state.weeklyScores[state.weekKey]={};if(!state.monthlyScores[state.monthKey])state.monthlyScores[state.monthKey]={};state.domains.forEach(function(_,idx){if(typeof state.weeklyScores[state.weekKey][idx]!=="number")state.weeklyScores[state.weekKey][idx]=0;if(!state.monthlyScores[state.monthKey][idx]){state.monthlyScores[state.monthKey][idx]={};state.domains[idx].sub.forEach(function(_,sIdx){if(typeof state.monthlyScores[state.monthKey][idx][sIdx]!=="number")state.monthlyScores[state.monthKey][idx][sIdx]=0})}})}
+var weeklyContainer=document.getElementById("weeklyDomains"),monthlyContainer=document.getElementById("monthlyDomains"),settingsContainer=document.getElementById("settingsDomains"),periodLabel=document.getElementById("periodLabel"),toastEl=document.getElementById("toast"),radarCanvas=document.getElementById("weeklyRadar"),views={weeklyView:document.getElementById("weeklyView"),monthlyView:document.getElementById("monthlyView"),settingsView:document.getElementById("settingsView")};
+var toastTimer=null;function showToast(msg){toastEl.textContent=msg||"Saved ✓";if(toastTimer){clearTimeout(toastTimer);toastTimer=null}toastEl.classList.add("visible");toastTimer=setTimeout(function(){toastEl.classList.remove("visible")},900)}
+function updatePeriodLabel(){periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey}
+function renderWeekly(){weeklyContainer.innerHTML="";var wk=state.weeklyScores[state.weekKey];state.domains.forEach(function(dom,idx){var val=typeof wk[idx]==="number"?wk[idx]:0;var card=document.createElement("div");card.className="card";var head=document.createElement("div");head.className="card-header";var title=document.createElement("div");title.className="card-title";title.textContent=dom.name;var value=document.createElement("div");value.className="card-value";value.textContent=val+"/10";head.appendChild(title);head.appendChild(value);var body=document.createElement("div");body.className="slider-row";var label=document.createElement("label");label.textContent="How satisfied are you with this domain this week?";var slider=document.createElement("input");slider.type="range";slider.min="0";slider.max="10";slider.step="1";slider.value=val;slider.setAttribute("data-domain-idx",idx);var sv=document.createElement("div");sv.className="slider-value-label";sv.textContent="Current: "+val;slider.addEventListener("input",function(e){var v=parseInt(e.target.value,10)||0;state.weeklyScores[state.weekKey][idx]=v;value.textContent=v+"/10";sv.textContent="Current: "+v;saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);drawRadarFromState();showToast("Saved ✓")});body.appendChild(label);body.appendChild(slider);body.appendChild(sv);card.appendChild(head);card.appendChild(body);weeklyContainer.appendChild(card)})}
+function renderMonthly(){monthlyContainer.innerHTML="";var mk=state.monthlyScores[state.monthKey];state.domains.forEach(function(dom,idx){var card=document.createElement("div");card.className="card";var head=document.createElement("div");head.className="card-header";var title=document.createElement("div");title.className="card-title";title.textContent=dom.name;head.appendChild(title);card.appendChild(head);var body=document.createElement("div");body.className="slider-row";dom.sub.forEach(function(subName,sIdx){if(!mk[idx])mk[idx]={};if(typeof mk[idx][sIdx]!=="number")mk[idx][sIdx]=0;var val=mk[idx][sIdx];var label=document.createElement("label");label.textContent=subName;var slider=document.createElement("input");slider.type="range";slider.min="0";slider.max="10";slider.step="1";slider.value=val;slider.setAttribute("data-domain-idx",idx);slider.setAttribute("data-sub-idx",sIdx);var sv=document.createElement("div");sv.className="slider-value-label";sv.textContent="Current: "+val;slider.addEventListener("input",function(e){var v=parseInt(e.target.value,10)||0;if(!state.monthlyScores[state.monthKey][idx])state.monthlyScores[state.monthKey][idx]={};state.monthlyScores[state.monthKey][idx][sIdx]=v;sv.textContent="Current: "+v;saveJSON(STORAGE_KEY_MONTHLY,state.monthlyScores);showToast("Saved ✓")});body.appendChild(label);body.appendChild(slider);body.appendChild(sv)});card.appendChild(body);monthlyContainer.appendChild(card)})}
+function renderSettings(){settingsContainer.innerHTML="";state.domains.forEach(function(dom,idx){var group=document.createElement("div");group.className="settings-group";var row1=document.createElement("div");row1.className="settings-row";var inputName=document.createElement("input");inputName.type="text";inputName.value=dom.name;inputName.placeholder="Domain name";inputName.addEventListener("change",function(e){state.domains[idx].name=e.target.value||"Domain "+(idx+1);saveJSON(STORAGE_KEY_DOMAINS,state.domains);renderWeekly();renderMonthly();drawRadarFromState();showToast("Saved ✓")});var removeBtn=document.createElement("button");removeBtn.textContent="Remove";removeBtn.addEventListener("click",function(){if(state.domains.length<=3){alert("Keep at least three domains.");return}state.domains.splice(idx,1);saveJSON(STORAGE_KEY_DOMAINS,state.domains);cleanupScores();renderAll();showToast("Saved ✓")});row1.appendChild(inputName);row1.appendChild(removeBtn);var row2=document.createElement("div");row2.className="settings-row";var inputSub=document.createElement("input");inputSub.type="text";inputSub.value=dom.sub.join(", ");inputSub.placeholder="Subdomains (comma separated)";inputSub.addEventListener("change",function(e){var raw=e.target.value||"";var parts=raw.split(",").map(function(s){return s.trim()}).filter(Boolean);if(!parts.length)parts=["Aspect 1","Aspect 2","Aspect 3"];state.domains[idx].sub=parts;saveJSON(STORAGE_KEY_DOMAINS,state.domains);cleanupScores();renderMonthly();showToast("Saved ✓")});row2.appendChild(inputSub);group.appendChild(row1);group.appendChild(row2);settingsContainer.appendChild(group)})}
+function cleanupScores(){Object.keys(state.weeklyScores).forEach(function(weekKey){var wk=state.weeklyScores[weekKey];var newW={};state.domains.forEach(function(_,idx){newW[idx]=typeof wk[idx]==="number"?wk[idx]:0});state.weeklyScores[weekKey]=newW});Object.keys(state.monthlyScores).forEach(function(monthKey){var mk=state.monthlyScores[monthKey];var newM={};state.domains.forEach(function(dom,idx){newM[idx]=newM[idx]||{};dom.sub.forEach(function(_,sIdx){if(!mk[idx])mk[idx]={};newM[idx][sIdx]=typeof mk[idx][sIdx]==="number"?mk[idx][sIdx]:0})});state.monthlyScores[monthKey]=newM});saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);saveJSON(STORAGE_KEY_MONTHLY,state.monthlyScores)}
+function drawRadarFromState(){if(!radarCanvas)return;var wk=state.weeklyScores[state.weekKey]||{};var labels=state.domains.map(function(d){return d.name});var vals=state.domains.map(function(_,idx){var v=wk[idx];return typeof v==="number"?v:0});drawRadar(radarCanvas,labels,vals)}
+function drawRadar(canvas,labels,values){var n=labels.length;if(!n)return;var dpr=window.devicePixelRatio||1;var rect=canvas.getBoundingClientRect();var size=Math.min(rect.width||260,320);canvas.width=size*dpr;canvas.height=size*dpr;var ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,size,size);var cx=size/2,cy=size/2,radius=size*0.36,maxVal=10;ctx.strokeStyle="#e5e7eb";ctx.lineWidth=1;var rings=4;for(var r=1;r<=rings;r++){ctx.beginPath();var rr=radius*r/rings;ctx.arc(cx,cy,rr,0,Math.PI*2);ctx.stroke()}for(var i=0;i<n;i++){var angle=(Math.PI*2*i/n)-Math.PI/2;var x=cx+radius*Math.cos(angle);var y=cy+radius*Math.sin(angle);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke()}ctx.fillStyle="#1f2933";ctx.font="10px -apple-system,BlinkMacSystemFont,system-ui";for(var j=0;j<n;j++){var ang=(Math.PI*2*j/n)-Math.PI/2;var lx=cx+(radius+12)*Math.cos(ang);var ly=cy+(radius+12)*Math.sin(ang);ctx.textAlign=Math.abs(Math.cos(ang))<0.1?"center":(Math.cos(ang)>0?"left":"right");ctx.textBaseline=Math.sin(ang)>0?"top":"bottom";ctx.fillText(labels[j],lx,ly)}ctx.beginPath();for(var k=0;k<n;k++){var ang2=(Math.PI*2*k/n)-Math.PI/2;var v=values[k];if(v<0)v=0;if(v>maxVal)v=maxVal;var rr2=radius*(v/maxVal);var px=cx+rr2*Math.cos(ang2);var py=cy+rr2*Math.sin(ang2);if(k===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}ctx.closePath();ctx.fillStyle="rgba(93,168,255,0.23)";ctx.strokeStyle="rgba(37,99,235,0.9)";ctx.lineWidth=2;ctx.fill();ctx.stroke()}
+function bindTabs(){var buttons=document.querySelectorAll(".tab-btn");buttons.forEach(function(btn){btn.addEventListener("click",function(){var target=btn.getAttribute("data-view");if(!views[target])return;Object.keys(views).forEach(function(k){views[k].classList.remove("active")});views[target].classList.add("active");buttons.forEach(function(b){b.classList.remove("active")});btn.classList.add("active")})})}
+function bindAddDomain(){var addBtn=document.getElementById("addDomainBtn");addBtn.addEventListener("click",function(){var idx=state.domains.length+1;state.domains.push({name:"New domain "+idx,sub:["Aspect 1","Aspect 2","Aspect 3"]});saveJSON(STORAGE_KEY_DOMAINS,state.domains);cleanupScores();renderAll();showToast("Saved ✓")})}
+function renderAll(){updatePeriodLabel();renderWeekly();renderMonthly();renderSettings();drawRadarFromState()}
+function onResize(){drawRadarFromState()}
+initState();bindTabs();bindAddDomain();renderAll();window.addEventListener("resize",function(){clearTimeout(window.__lwResizeTimer);window.__lwResizeTimer=setTimeout(onResize,180)});})();
+</script>
+</body></html>
