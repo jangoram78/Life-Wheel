@@ -87,8 +87,16 @@
 <script>
 (function(){
 "use strict";
-var STORAGE_KEY_DOMAINS="lw_domains_v1",STORAGE_KEY_WEEKLY="lw_weekly_scores_v1",STORAGE_KEY_MONTHLY="lw_monthly_scores_v1";
-var defaultDomains=[{name:"Health",sub:["Physical","Mental","Sleep"]},{name:"Family & Relationships",sub:["Partner","Children","Friends"]},{name:"Career & Work",sub:["Progress","Satisfaction","Balance"]},{name:"Finances",sub:["Stability","Growth","Planning"]},{name:"Personal Growth",sub:["Learning","Reflection","Skills"]},{name:"Fun & Hobbies",sub:["Play","Creativity","Experiences"]},{name:"Environment",sub:["Home","Work space","Local"]},{name:"Contribution",sub:["Helping others","Community","Legacy"]}];
+var STORAGE_KEY_DOMAINS="lw_domains_v2",STORAGE_KEY_WEEKLY="lw_weekly_scores_v2",STORAGE_KEY_MONTHLY="lw_monthly_scores_v2";
+var defaultDomains=[
+  {name:"Mental",sub:["Logic","Knowledge","Skill"]},
+  {name:"Physical",sub:["Strength","Stamina","Health","Mobility"]},
+  {name:"Spiritual",sub:["Belief","Philosophy","Death Awareness","Virtue","Self-Control"]},
+  {name:"Emotional",sub:["Resilience","Joy","Stress Management","Identity"]},
+  {name:"Environmental",sub:["Sustainability","Reducing Impact"]},
+  {name:"Work & Purpose",sub:["Career","Mastery","Finance","Legacy"]},
+  {name:"Social",sub:["Family","Friends","Colleagues","Civic Contribution"]}
+];
 function loadJSON(key,fallback){try{var raw=localStorage.getItem(key);if(!raw)return fallback;var parsed=JSON.parse(raw);return parsed||fallback}catch(e){return fallback}}
 function saveJSON(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(e){}}
 function getWeekKey(){var d=new Date(),year=d.getFullYear(),oneJan=new Date(year,0,1);var dayMS=24*60*60*1000;var diff=d-oneJan;var day=oneJan.getDay()||7;var week=Math.ceil(((diff/dayMS)+day)/7);return year+"-W"+(week<10?"0"+week:week)}
