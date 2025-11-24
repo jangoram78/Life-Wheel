@@ -132,13 +132,7 @@
       background:#fff;
       border-radius:16px;
       box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);
-      padding:10px 8px;
-      margin-bottom:6px
-    }
-    .radar-title{
-      font-size:13px;
-      font-weight:500;
-      color:#111;
+      padding:4px 6px;
       margin-bottom:4px
     }
     .radar-canvas-wrap{
@@ -292,7 +286,6 @@
     <div id="weeklyView" class="view active">
       <div class="section">
         <div class="radar-wrapper">
-          <div class="radar-title">Weekly domain overview</div>
           <div class="radar-canvas-wrap">
             <canvas id="weeklyRadar"></canvas>
           </div>
@@ -689,7 +682,7 @@
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.9; // 10% smaller
+        var size=Math.min(rect.width||260,320)*0.86; // 14% smaller than base
         canvas.width=size*dpr;
         canvas.height=size*dpr;
 
@@ -701,7 +694,7 @@
         var radius=size*0.36;
         var maxVal=10;
         var step=(Math.PI*2)/n;
-        var base=-Math.PI/2; // top boundary
+        var base=-Math.PI/2; // top boundary of first segment
 
         // Grid circles
         ctx.strokeStyle="#e5e7eb";
@@ -725,14 +718,14 @@
           ctx.stroke();
         }
 
-        // Labels at centre of each segment
+        // Labels at centre of each segment, closer to wheel
         ctx.fillStyle="#1f2933";
         ctx.font="10px -apple-system,BlinkMacSystemFont,system-ui";
         for(var j=0;j<n;j++){
           var startAng=base+step*j;
           var centerAng=startAng+step/2;
-          var lx=cx+(radius+12)*Math.cos(centerAng);
-          var ly=cy+(radius+12)*Math.sin(centerAng);
+          var lx=cx+(radius+4)*Math.cos(centerAng);
+          var ly=cy+(radius+4)*Math.sin(centerAng);
           ctx.textAlign=Math.abs(Math.cos(centerAng))<0.1?"center":(Math.cos(centerAng)>0?"left":"right");
           ctx.textBaseline=Math.sin(centerAng)>0?"top":"bottom";
           ctx.fillText(labels[j],lx,ly);
