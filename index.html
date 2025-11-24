@@ -23,20 +23,25 @@
       flex-direction:column;
       max-width:480px;
       margin:0 auto;
-      padding:10px 10px 72px
+      padding:6px 10px 72px
     }
     .app-header{
-      padding:2px 2px 6px
+      padding:2px 2px 0;
+      display:flex;
+      justify-content:center;
+      align-items:baseline;
+      gap:6px;
     }
     .app-title{
-      font-size:20px;
+      font-size:18px;
       font-weight:600;
-      margin-bottom:2px
+      margin:0;
     }
     .app-subtitle{
       font-size:12px;
       color:#667;
-      opacity:.9
+      opacity:.9;
+      white-space:nowrap;
     }
     .view{
       display:none;
@@ -46,8 +51,11 @@
     }
     .view.active{display:block}
     .section{
-      margin-top:6px;
+      margin-top:4px;
       margin-bottom:6px
+    }
+    .view > .section:first-child{
+      margin-top:2px;
     }
     .section-title{
       font-size:14px;
@@ -132,8 +140,8 @@
       background:#fff;
       border-radius:16px;
       box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);
-      padding:4px 6px;
-      margin-bottom:4px
+      padding:2px 6px 4px;
+      margin-bottom:2px
     }
     .radar-canvas-wrap{
       width:100%;
@@ -682,7 +690,7 @@
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.86; // 14% smaller than base
+        var size=Math.min(rect.width||260,320)*0.86;
         canvas.width=size*dpr;
         canvas.height=size*dpr;
 
@@ -694,7 +702,7 @@
         var radius=size*0.36;
         var maxVal=10;
         var step=(Math.PI*2)/n;
-        var base=-Math.PI/2; // top boundary of first segment
+        var base=-Math.PI/2;
 
         // Grid circles
         ctx.strokeStyle="#e5e7eb";
@@ -718,7 +726,7 @@
           ctx.stroke();
         }
 
-        // Labels at centre of each segment, closer to wheel
+        // Labels at centre of each segment, close to wheel
         ctx.fillStyle="#1f2933";
         ctx.font="10px -apple-system,BlinkMacSystemFont,system-ui";
         for(var j=0;j<n;j++){
