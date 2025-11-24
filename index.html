@@ -23,10 +23,10 @@
       flex-direction:column;
       max-width:480px;
       margin:0 auto;
-      padding:6px 10px 72px
+      padding:2px 8px 70px;
     }
     .app-header{
-      padding:2px 2px 0;
+      padding:0 2px 0;
       display:flex;
       justify-content:center;
       align-items:baseline;
@@ -51,11 +51,11 @@
     }
     .view.active{display:block}
     .section{
-      margin-top:4px;
-      margin-bottom:6px
+      margin-top:2px;
+      margin-bottom:4px
     }
     .view > .section:first-child{
-      margin-top:2px;
+      margin-top:0;
     }
     .section-title{
       font-size:14px;
@@ -138,10 +138,10 @@
     }
     .radar-wrapper{
       background:#fff;
-      border-radius:16px;
+      border-radius:14px;
       box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);
-      padding:2px 6px 4px;
-      margin-bottom:2px
+      padding:0 4px 1px;
+      margin-bottom:0
     }
     .radar-canvas-wrap{
       width:100%;
@@ -323,12 +323,12 @@
       </div>
       <div class="section">
         <div class="section-title">Info</div>
-        <div class="card">
-          <div class="small-note">
-            Data is stored locally on this device using your browser's storage.
-            Clearing site data will reset your scores.
+          <div class="card">
+            <div class="small-note">
+              Data is stored locally on this device using your browser's storage.
+              Clearing site data will reset your scores.
+            </div>
           </div>
-        </div>
       </div>
     </div>
   </div>
@@ -684,13 +684,31 @@
         drawRadar(radarCanvas,labels,vals);
       }
 
+      // Simple helper to wrap text into multiple lines within maxWidth
+      function wrapTextLines(ctx,text,maxWidth){
+        var words=text.split(" ");
+        var lines=[];
+        var current=words[0]||"";
+        for(var i=1;i<words.length;i++){
+          var test=current+" "+words[i];
+          if(ctx.measureText(test).width<=maxWidth){
+            current=test;
+          }else{
+            lines.push(current);
+            current=words[i];
+          }
+        }
+        lines.push(current);
+        return lines;
+      }
+
       function drawRadar(canvas,labels,values){
         var n=labels.length;
         if(!n)return;
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.86;
+        var size=Math.min(rect.width||260,320)*0.84;
         canvas.width=size*dpr;
         canvas.height=size*dpr;
 
@@ -699,7 +717,7 @@
         ctx.clearRect(0,0,size,size);
 
         var cx=size/2,cy=size/2;
-        var radius=size*0.36;
+        var radius=size*0.4;
         var maxVal=10;
         var step=(Math.PI*2)/n;
         var base=-Math.PI/2;
@@ -726,17 +744,41 @@
           ctx.stroke();
         }
 
-        // Labels at centre of each segment, close to wheel
+        // Labels at centre of each segment, just inside outer ring with wrapping
         ctx.fillStyle="#1f2933";
-        ctx.font="10px -apple-system,BlinkMacSystemFont,system-ui";
+        ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
+        var labelRadius=radius*0.84;
+        var maxLabelWidth=radius*0.7;
+
         for(var j=0;j<n;j++){
           var startAng=base+step*j;
           var centerAng=startAng+step/2;
-          var lx=cx+(radius+4)*Math.cos(centerAng);
-          var ly=cy+(radius+4)*Math.sin(centerAng);
-          ctx.textAlign=Math.abs(Math.cos(centerAng))<0.1?"center":(Math.cos(centerAng)>0?"left":"right");
-          ctx.textBaseline=Math.sin(centerAng)>0?"top":"bottom";
-          ctx.fillText(labels[j],lx,ly);
+          var lx=cx+labelRadius*Math.cos(centerAng);
+          var ly=cy+labelRadius*Math.sin(centerAng);
+
+          var text=labels[j];
+          var lines=wrapTextLines(ctx,text,maxLabelWidth);
+          var lineHeight=10;
+
+          var ca=Math.cos(centerAng);
+          var align;
+          if(Math.abs(ca)<0.15){
+            align="center";
+          }else if(ca>0){
+            // right side of circle: anchor on outside, text flows inward
+            align="right";
+          }else{
+            // left side: anchor on outside, text flows inward
+            align="left";
+          }
+          ctx.textAlign=align;
+
+          var baselineShift=(lines.length-1)*lineHeight/2;
+          for(var li=0;li<lines.length;li++){
+            var offsetY=-baselineShift+li*lineHeight;
+            ctx.textBaseline="middle";
+            ctx.fillText(lines[li],lx,ly+offsetY);
+          }
         }
 
         // Per-domain wedges between radial lines
