@@ -362,8 +362,8 @@
     (function(){
       "use strict";
 
-      // 🔢 Build marker – I’ll bump this each time we ship a new version
-      var APP_VERSION = "U1";
+      // Build marker – bumped each time
+      var APP_VERSION = "U2";
 
       var STORAGE_KEY_DOMAINS = "lw_domains_v2";
       var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v2";
@@ -464,7 +464,6 @@
       }
 
       function updatePeriodLabel(){
-        // now includes the build marker
         periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey+" · "+APP_VERSION;
       }
 
@@ -711,7 +710,8 @@
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.78;
+        // slightly smaller overall canvas
+        var size=Math.min(rect.width||260,320)*0.7;
         canvas.width=size*dpr;
         canvas.height=size*dpr;
 
@@ -720,7 +720,7 @@
         ctx.clearRect(0,0,size,size);
 
         var cx=size/2,cy=size/2;
-        var radius=size*0.38;
+        var radius=size*0.42;     // main circle
         var maxVal=10;
         var step=(Math.PI*2)/n;
         var base=-Math.PI/2;
@@ -745,10 +745,11 @@
           ctx.stroke();
         }
 
+        // labels: a bit further out, wrapped
         ctx.fillStyle="#1f2933";
         ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
-        var labelRadius=radius*0.84;
-        var maxLabelWidth=radius*0.7;
+        var labelRadius=radius*0.93;          // moved outward
+        var maxLabelWidth=radius*0.6;         // narrower for nicer wrapping
 
         for(var j=0;j<n;j++){
           var startAng=base+step*j;
