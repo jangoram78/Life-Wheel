@@ -52,7 +52,7 @@
     .view.active{display:block}
     .section{
       margin-top:2px;
-      margin-bottom:4px
+      margin-bottom:3px;
     }
     .view > .section:first-child{
       margin-top:0;
@@ -60,7 +60,7 @@
     .section-title{
       font-size:14px;
       font-weight:600;
-      margin-bottom:4px;
+      margin-bottom:3px;
       color:#445
     }
     .card{
@@ -140,8 +140,8 @@
       background:#fff;
       border-radius:14px;
       box-shadow:0 6px 18px rgba(15,23,42,.08),0 1px 3px rgba(15,23,42,.12);
-      padding:0 4px 1px;
-      margin-bottom:0
+      padding:0 4px 0;
+      margin-bottom:0;
     }
     .radar-canvas-wrap{
       width:100%;
@@ -323,12 +323,12 @@
       </div>
       <div class="section">
         <div class="section-title">Info</div>
-          <div class="card">
-            <div class="small-note">
-              Data is stored locally on this device using your browser's storage.
-              Clearing site data will reset your scores.
-            </div>
+        <div class="card">
+          <div class="small-note">
+            Data is stored locally on this device using your browser's storage.
+            Clearing site data will reset your scores.
           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -361,6 +361,9 @@
   <script>
     (function(){
       "use strict";
+
+      // 🔢 Build marker – I’ll bump this each time we ship a new version
+      var APP_VERSION = "U1";
 
       var STORAGE_KEY_DOMAINS = "lw_domains_v2";
       var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v2";
@@ -461,7 +464,8 @@
       }
 
       function updatePeriodLabel(){
-        periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey;
+        // now includes the build marker
+        periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey+" · "+APP_VERSION;
       }
 
       function renderWeekly(){
@@ -684,7 +688,6 @@
         drawRadar(radarCanvas,labels,vals);
       }
 
-      // Simple helper to wrap text into multiple lines within maxWidth
       function wrapTextLines(ctx,text,maxWidth){
         var words=text.split(" ");
         var lines=[];
@@ -708,7 +711,7 @@
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.84;
+        var size=Math.min(rect.width||260,320)*0.78;
         canvas.width=size*dpr;
         canvas.height=size*dpr;
 
@@ -717,12 +720,11 @@
         ctx.clearRect(0,0,size,size);
 
         var cx=size/2,cy=size/2;
-        var radius=size*0.4;
+        var radius=size*0.38;
         var maxVal=10;
         var step=(Math.PI*2)/n;
         var base=-Math.PI/2;
 
-        // Grid circles
         ctx.strokeStyle="#e5e7eb";
         ctx.lineWidth=1;
         var rings=4;
@@ -733,7 +735,6 @@
           ctx.stroke();
         }
 
-        // Radial lines at boundaries
         for(var i=0;i<n;i++){
           var angle=base+step*i;
           var x=cx+radius*Math.cos(angle);
@@ -744,7 +745,6 @@
           ctx.stroke();
         }
 
-        // Labels at centre of each segment, just inside outer ring with wrapping
         ctx.fillStyle="#1f2933";
         ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
         var labelRadius=radius*0.84;
@@ -765,10 +765,8 @@
           if(Math.abs(ca)<0.15){
             align="center";
           }else if(ca>0){
-            // right side of circle: anchor on outside, text flows inward
             align="right";
           }else{
-            // left side: anchor on outside, text flows inward
             align="left";
           }
           ctx.textAlign=align;
@@ -781,7 +779,6 @@
           }
         }
 
-        // Per-domain wedges between radial lines
         for(var k=0;k<n;k++){
           var v=values[k];
           if(v<=0)continue;
