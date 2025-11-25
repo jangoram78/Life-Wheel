@@ -1,7 +1,13 @@
 // ui.js
 (function(window){
   "use strict";
-
+  // Compatibility alias: support either LWEngine or LWengine from engine.js
+  if (!window.LWEngine && window.LWengine) {
+    window.LWEngine = window.LWengine;
+  }
+  if (!window.LWEngine && !window.LWengine) {
+    console.error("Life Wheel engine not found (expected LWEngine or LWengine).");
+  }
   var todayContainer,
       weeklyContainer,
       monthlyContainer,
