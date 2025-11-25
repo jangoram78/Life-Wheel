@@ -93,7 +93,7 @@
   }
 
   // ----- Unified state structure -----
-  var  = null;
+var userState = null;
 
   function buildDefaultState(){
     var todayKey = getTodayKey();
@@ -843,7 +843,15 @@ function ensureCurrentFrames(){
     }
     return { labels:labels, values:values };
   }
+function getState(){
+  return userState;
+}
 
+function getDomains(){
+  return userState && Array.isArray(userState.domains)
+    ? userState.domains
+    : [];
+}
   // Public
   window.LWEngine = {
     init: init,
