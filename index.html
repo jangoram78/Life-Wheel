@@ -610,7 +610,7 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U11";
+      var APP_VERSION = "U12";
 
       // Storage keys
       var STORAGE_KEY_DOMAINS   = "lw_domains_v3";      // 6-domain model
@@ -715,7 +715,7 @@
           });
         });
 
-        ensureTasksForToday();
+        ensureTasksForToday(false);
       }
 
       var todayContainer=document.getElementById("todayContent"),
@@ -893,7 +893,7 @@
 
       // --- Task generation ---
 
-      function ensureTasksForToday(){
+      function ensureTasksForToday(force){
         var todayKey = state.todayKey;
         if(!state.tasksByDate[todayKey]){
           state.tasksByDate[todayKey]={micro:[],standard:[],deep:[]};
@@ -908,7 +908,7 @@
         var hasAny = (pack.micro && pack.micro.length) ||
                      (pack.standard && pack.standard.length) ||
                      (pack.deep && pack.deep.length);
-        if(hasAny){
+        if(!force && hasAny){
           return;
         }
 
@@ -943,9 +943,11 @@
         // Take up to 2 focus domains (for 2 micro tasks)
         focus = focus.slice(0,2);
 
+        var nowIso = new Date().toISOString();
+
         pack.micro = [];
         pack.standard = [];
-        pack.deep = pack.deep || [];
+        pack.deep = [];
 
         // Micro: 1 per focus domain (2 micro tasks)
         focus.forEach(function(d,i){
@@ -966,7 +968,8 @@
             label: label,
             energyCost: 3,
             expectedDuration: 10,
-            state: "pending"
+            state: "pending",
+            createdAt: nowIso
           });
         });
 
@@ -990,7 +993,8 @@
             label: labelStd,
             energyCost: 5,
             expectedDuration: 20,
-            state: "pending"
+            state: "pending",
+            createdAt: nowIso
           });
         }
 
@@ -1018,12 +1022,23 @@
             label: labelDeep,
             energyCost: 7,
             expectedDuration: 25,
-            state: "pending"
+            state: "pending",
+            createdAt: nowIso
           });
         }
 
         state.tasksByDate[todayKey] = pack;
         saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+      }
+
+      // Regenerate today's tasks on demand
+      function regenerateTasksForToday(){
+        var todayKey = state.todayKey;
+        state.tasksByDate[todayKey] = { micro:[], standard:[], deep:[] };
+        ensureTasksForToday(true);
+        saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+        renderToday();
+        showToast("Today’s tasks regenerated");
       }
 
       // Generate a new replacement task for same domain + difficulty
@@ -1067,7 +1082,8 @@
           label: label,
           energyCost: energy,
           expectedDuration: duration,
-          state: "pending"
+          state: "pending",
+          createdAt: new Date().toISOString()
         };
       }
 
@@ -1140,7 +1156,19 @@
         title.className="card-title";
         title.textContent="Today’s tasks";
 
+        var regenBtn=document.createElement("button");
+        regenBtn.className="btn outline";
+        regenBtn.textContent="Regenerate";
+        regenBtn.style.fontSize="11px";
+        regenBtn.style.padding="4px 8px";
+        regenBtn.addEventListener("click",function(){
+          if(confirm("Regenerate today’s tasks? This will replace today’s list.")){
+            regenerateTasksForToday();
+          }
+        });
+
         header.appendChild(title);
+        header.appendChild(regenBtn);
         card.appendChild(header);
 
         var body=document.createElement("div");
