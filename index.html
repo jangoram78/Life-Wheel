@@ -560,7 +560,7 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U8";
+      var APP_VERSION = "U9";
 
       // Storage keys
       var STORAGE_KEY_DOMAINS = "lw_domains_v3";      // 6-domain model
@@ -787,7 +787,7 @@
         };
       }
 
-      // --- Task generation & rendering ---
+      // --- Task generation ---
 
       function ensureTasksForToday(){
         var todayKey = state.todayKey;
@@ -890,6 +890,41 @@
         saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
       }
 
+      // Increment weekly score when a task is completed for the first time
+      function applyTaskCompletionImpact(task){
+        if(typeof task.domainIdx!=="number") return;
+        var idx = task.domainIdx;
+        if(!state.weeklyScores[state.weekKey]){
+          state.weeklyScores[state.weekKey] = {};
+        }
+        var current = typeof state.weeklyScores[state.weekKey][idx]==="number"
+          ? state.weeklyScores[state.weekKey][idx]
+          : 0;
+
+        var delta = 0;
+        if(task.difficulty==="micro")      delta = 0.3;
+        else if(task.difficulty==="standard") delta = 0.5;
+        else if(task.difficulty==="deep")  delta = 0.8;
+
+        var updated = current + delta;
+        if(updated > 10) updated = 10;
+        if(updated < 0)  updated = 0;
+
+        state.weeklyScores[state.weekKey][idx] = updated;
+        saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);
+
+        var domName = (state.domains[idx] && state.domains[idx].name) || "Domain";
+        showToast("Saved ✓ · "+domName+" +"+delta.toFixed(1));
+
+        // Refresh dependent views
+        drawRadarFromState();
+        renderInsights();
+        renderToday();
+        renderWeekly(); // so slider numbers reflect updated scores
+      }
+
+      // --- Task rendering ---
+
       function renderTasksToday(container){
         var todayKey = state.todayKey;
         var pack = state.tasksByDate[todayKey];
@@ -943,13 +978,23 @@
               checkbox.checked = (task.state==="done");
 
               checkbox.addEventListener("change",function(){
-                task.state = checkbox.checked ? "done" : "pending";
-                if(task.state==="done"){
+                var wasDone = (task.state === "done");
+                var nowChecked = checkbox.checked;
+
+                // Update visual/task state
+                if(nowChecked){
+                  task.state = "done";
                   row.classList.add("task-done");
                 }else{
+                  task.state = "pending";
                   row.classList.remove("task-done");
                 }
                 saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+
+                // Only apply impact when transitioning pending -> done
+                if(!wasDone && nowChecked){
+                  applyTaskCompletionImpact(task);
+                }
               });
 
               var main=document.createElement("div");
