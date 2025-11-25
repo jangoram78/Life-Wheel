@@ -682,7 +682,7 @@
   function getMonthlyVM(){
     var mk = userState.monthlyScores[userState.monthKey] || {};
     var domains = [];
-    for(var i=0;i=userState.domains.length;i++){
+    for (var i = 0; i < userState.domains.length; i++) {
       var dom = userState.domains[i];
       var subs = [];
       for(var sIdx=0;sIdx<dom.sub.length;sIdx++){
