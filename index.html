@@ -358,6 +358,41 @@
       display:flex;
       align-items:baseline;
     }
+    .today-domain-header-label,
+    .today-domain-header-score{
+      font-size:11px;
+      color:#94a3b8;
+      font-weight:500;
+    }
+
+    /* Nudge */
+    .nudge-message{
+      font-size:12px;
+      color:#111;
+      margin-top:2px;
+    }
+    .nudge-type-chip{
+      font-size:10px;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid transparent;
+      margin-left:6px;
+    }
+    .nudge-soft{
+      background:#e0f2fe;
+      color:#0369a1;
+      border-color:#bae6fd;
+    }
+    .nudge-standard{
+      background:#fef9c3;
+      color:#854d0e;
+      border-color:#fde68a;
+    }
+    .nudge-corrective{
+      background:#fee2e2;
+      color:#b91c1c;
+      border-color:#fecaca;
+    }
 
     /* Tasks */
     .task-group-title{
@@ -525,7 +560,7 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U7";
+      var APP_VERSION = "U8";
 
       // Storage keys
       var STORAGE_KEY_DOMAINS = "lw_domains_v3";      // 6-domain model
@@ -686,6 +721,72 @@
         return m;
       }
 
+      // Simple nudge builder for Today screen
+      function buildNudge(){
+        var wk = state.weeklyScores[state.weekKey] || {};
+        var domains = state.domains;
+        if(!domains.length) return null;
+
+        var info = domains.map(function(dom, idx){
+          var score = typeof wk[idx]==="number" ? wk[idx] : 0;
+          var neglect = deriveNeglect(score);
+          var neglectRank = (neglect==="serious"?2:(neglect==="medium"?1:0));
+          return {
+            idx: idx,
+            name: dom.name,
+            score: score,
+            neglect: neglect,
+            neglectRank: neglectRank
+          };
+        });
+
+        info.sort(function(a,b){
+          if(b.neglectRank!==a.neglectRank){
+            return b.neglectRank - a.neglectRank;
+          }
+          return a.score - b.score;
+        });
+
+        var worst = info[0];
+        if(!worst) return null;
+
+        var total=0, count=0;
+        info.forEach(function(d){
+          total+=d.score;
+          count++;
+        });
+        var avg = count? total/count : 0;
+        var momentum = computeWeeklyMomentum();
+
+        var type;
+        if(worst.neglect==="serious" || avg<4){
+          type="corrective";
+        }else if(worst.neglect==="medium" || avg<6){
+          type="standard";
+        }else{
+          type="soft";
+        }
+
+        var msg;
+        if(type==="soft"){
+          msg = "You’re broadly on track. If you can, do one small thing today that supports "+worst.name+".";
+        }else if(type==="standard"){
+          msg = worst.name+" is falling behind this week. Protect 5–10 minutes today to nudge it forward.";
+        }else{
+          msg = "You’ve been neglecting "+worst.name+". Ring-fence one simple action today so this domain doesn’t keep sliding.";
+        }
+
+        if(momentum<0 && type!=="corrective"){
+          msg += " Keep it very small – the aim is just to get moving again.";
+        }
+
+        return {
+          type:type,
+          message:msg,
+          target:worst.name
+        };
+      }
+
       // --- Task generation & rendering ---
 
       function ensureTasksForToday(){
@@ -698,7 +799,7 @@
                      (pack.standard && pack.standard.length) ||
                      (pack.deep && pack.deep.length);
         if(hasAny){
-          return; // don't overwrite existing tasks for today
+          return;
         }
 
         var wk = state.weeklyScores[state.weekKey] || {};
@@ -769,7 +870,6 @@
         // Deep: 1 for the best-scoring domain, only if momentum is decent
         var momentum = computeWeeklyMomentum();
         if(momentum >= 0.3 && domainInfo.length){
-          // best-scoring domain = sort by score desc
           var sortedByScore = domainInfo.slice().sort(function(a,b){
             return b.score - a.score;
           });
@@ -951,7 +1051,51 @@
 
         todayContainer.appendChild(summaryCard);
 
-        // Domain cards (simple list in one card)
+        // Nudge card
+        var nudge = buildNudge();
+        if(nudge){
+          var nudgeCard=document.createElement("div");
+          nudgeCard.className="card";
+
+          var nHead=document.createElement("div");
+          nHead.className="card-header";
+
+          var nTitle=document.createElement("div");
+          nTitle.className="card-title";
+          nTitle.textContent="Coach nudge";
+
+          var nType=document.createElement("div");
+          nType.className="card-value";
+          var chip=document.createElement("span");
+          chip.className="nudge-type-chip";
+          if(nudge.type==="soft"){
+            chip.classList.add("nudge-soft");
+            chip.textContent="soft";
+          }else if(nudge.type==="standard"){
+            chip.classList.add("nudge-standard");
+            chip.textContent="standard";
+          }else{
+            chip.classList.add("nudge-corrective");
+            chip.textContent="corrective";
+          }
+          nType.appendChild(chip);
+
+          nHead.appendChild(nTitle);
+          nHead.appendChild(nType);
+          nudgeCard.appendChild(nHead);
+
+          var nBody=document.createElement("div");
+          nBody.className="today-stack";
+          var msgEl=document.createElement("div");
+          msgEl.className="nudge-message";
+          msgEl.textContent=nudge.message;
+          nBody.appendChild(msgEl);
+
+          nudgeCard.appendChild(nBody);
+          todayContainer.appendChild(nudgeCard);
+        }
+
+        // Domains card (sorted by most attention needed)
         var domainsCard=document.createElement("div");
         domainsCard.className="card";
 
@@ -968,9 +1112,44 @@
         var domainsBody=document.createElement("div");
         domainsBody.className="today-stack";
 
-        domains.forEach(function(dom,idx){
+        // Header row: Domain / Score for week
+        var headerRow=document.createElement("div");
+        headerRow.className="today-domain-row";
+        var headerLabel=document.createElement("div");
+        headerLabel.className="today-domain-header-label";
+        headerLabel.textContent="Domain";
+        var headerScore=document.createElement("div");
+        headerScore.className="today-domain-header-score";
+        headerScore.textContent="Score for week";
+        headerRow.appendChild(headerLabel);
+        headerRow.appendChild(headerScore);
+        domainsBody.appendChild(headerRow);
+
+        // Build domain info and sort by neglect + score
+        var domainInfo = domains.map(function(dom,idx){
           var score = scores[idx];
           var neglect = deriveNeglect(score);
+          var neglectRank = (neglect==="serious"?2:(neglect==="medium"?1:0));
+          return {
+            idx: idx,
+            name: dom.name,
+            score: score,
+            neglect: neglect,
+            neglectRank: neglectRank
+          };
+        });
+
+        domainInfo.sort(function(a,b){
+          if(b.neglectRank!==a.neglectRank){
+            return b.neglectRank - a.neglectRank;
+          }
+          return a.score - b.score;
+        });
+
+        domainInfo.forEach(function(info){
+          var dom = domains[info.idx];
+          var score = info.score;
+          var neglect = info.neglect;
 
           var row=document.createElement("div");
           row.className="today-domain-row";
