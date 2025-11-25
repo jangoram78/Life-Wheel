@@ -922,10 +922,11 @@
   }
 
   document.addEventListener("DOMContentLoaded",function(){
-    // First init engine (async), then UI
-    window.LWEngine.init().then(function(){
-      initUI();
-    });
+  console.log("LWEngine at DOMContentLoaded:", window.LWEngine);
+  // First init engine (async), then UI
+  window.LWEngine.init().then(function(){
+    initUI();
   });
+});
 
 })(window);
