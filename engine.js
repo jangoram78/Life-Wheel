@@ -4,11 +4,30 @@
 
   var APP_VERSION = "U13-Engine";
 
-  // localForage config
-  localforage.config({
+  // ---- localForage config (with safe fallback) ----
+  var lf = window.localforage;
+  if (!lf) {
+    console.warn("[LifeWheel] localforage not found – using in-memory fallback (no persistence).");
+    lf = {
+      _data: {},
+      config: function(){},
+      getItem: function(key){
+        return Promise.resolve(this._data[key] || null);
+      },
+      setItem: function(key, value){
+        this._data[key] = value;
+        return Promise.resolve(value);
+      }
+    };
+  }
+
+  lf.config({
     name: "LifeWheelApp",
     storeName: "lifewheel_state"
   });
+
+  // Alias back to the name used elsewhere in this file
+  var localforage = lf;
 
   var STATE_KEY = "userState_v2";
 
