@@ -560,7 +560,7 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U9";
+      var APP_VERSION = "U10";
 
       // Storage keys
       var STORAGE_KEY_DOMAINS = "lw_domains_v3";      // 6-domain model
@@ -697,9 +697,21 @@
 
       // --- Neglect & momentum helpers ---
 
+      // Day-scaled neglect: expectations increase as week progresses (Mon=1/7, ... Sun=7/7)
       function deriveNeglect(score){
-        if(score>=7) return "none";
-        if(score>=4) return "medium";
+        var d=new Date();
+        var js=d.getDay();              // Sun=0...Sat=6
+        var dow=(js===0?7:js);          // Mon=1...Sun=7
+        var frac=dow/7;                 // 1/7 .. 1
+
+        var baseNone=7;
+        var baseMedium=4;
+
+        var thrNone=baseNone*frac;
+        var thrMedium=baseMedium*frac;
+
+        if(score>=thrNone) return "none";
+        if(score>=thrMedium) return "medium";
         return "serious";
       }
 
@@ -795,6 +807,12 @@
           state.tasksByDate[todayKey]={micro:[],standard:[],deep:[]};
         }
         var pack = state.tasksByDate[todayKey];
+
+        // Make sure arrays exist
+        pack.micro = pack.micro || [];
+        pack.standard = pack.standard || [];
+        pack.deep = pack.deep || [];
+
         var hasAny = (pack.micro && pack.micro.length) ||
                      (pack.standard && pack.standard.length) ||
                      (pack.deep && pack.deep.length);
@@ -890,6 +908,39 @@
         saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
       }
 
+      // Generate a new replacement task for same domain + difficulty
+      function generateTaskForDomainAndDifficulty(domainIdx, difficulty){
+        var todayKey = state.todayKey;
+        var domName = (state.domains[domainIdx] && state.domains[domainIdx].name) || "Domain";
+        var rand = Math.floor(Math.random()*100000);
+        var id = todayKey+"-"+domainIdx+"-"+difficulty+"-extra-"+rand;
+
+        var label, duration, energy;
+        if(difficulty==="micro"){
+          label = "Another small 5–10 min action for "+domName+".";
+          duration = 10;
+          energy = 3;
+        }else if(difficulty==="standard"){
+          label = "Another 15–20 min block improving "+domName+".";
+          duration = 20;
+          energy = 5;
+        }else{
+          label = "Optional deep 20–30+ min block for "+domName+".";
+          duration = 25;
+          energy = 7;
+        }
+
+        return {
+          id: id,
+          domainIdx: domainIdx,
+          difficulty: difficulty,
+          label: label,
+          energyCost: energy,
+          expectedDuration: duration,
+          state: "pending"
+        };
+      }
+
       // Increment weekly score when a task is completed for the first time
       function applyTaskCompletionImpact(task){
         if(typeof task.domainIdx!=="number") return;
@@ -916,11 +967,11 @@
         var domName = (state.domains[idx] && state.domains[idx].name) || "Domain";
         showToast("Saved ✓ · "+domName+" +"+delta.toFixed(1));
 
-        // Refresh dependent views
+        // Refresh dependent views (weekly + nudge + today + insights)
         drawRadarFromState();
         renderInsights();
+        renderWeekly();
         renderToday();
-        renderWeekly(); // so slider numbers reflect updated scores
       }
 
       // --- Task rendering ---
@@ -932,9 +983,22 @@
           return;
         }
 
-        var hasAny = (pack.micro && pack.micro.length) ||
-                     (pack.standard && pack.standard.length) ||
-                     (pack.deep && pack.deep.length);
+        // Ensure arrays exist
+        pack.micro = pack.micro || [];
+        pack.standard = pack.standard || [];
+        pack.deep = pack.deep || [];
+
+        // Break into pending vs done for display
+        var microPending   = pack.micro.filter(function(t){ return t.state!=="done"; });
+        var standardPending= pack.standard.filter(function(t){ return t.state!=="done"; });
+        var deepPending    = pack.deep.filter(function(t){ return t.state!=="done"; });
+
+        var doneTasks = []
+          .concat(pack.micro.filter(function(t){return t.state==="done";}))
+          .concat(pack.standard.filter(function(t){return t.state==="done";}))
+          .concat(pack.deep.filter(function(t){return t.state==="done";}));
+
+        var hasAny = microPending.length || standardPending.length || deepPending.length || doneTasks.length;
 
         var card=document.createElement("div");
         card.className="card";
@@ -991,9 +1055,29 @@
                 }
                 saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
 
-                // Only apply impact when transitioning pending -> done
+                // Only apply impact + replacement when transitioning pending -> done
                 if(!wasDone && nowChecked){
                   applyTaskCompletionImpact(task);
+
+                  // Generate a new replacement task of same domain + difficulty
+                  var replacement = generateTaskForDomainAndDifficulty(task.domainIdx, task.difficulty);
+                  var todayKeyInner = state.todayKey;
+                  var packInner = state.tasksByDate[todayKeyInner];
+                  if(replacement && packInner){
+                    if(task.difficulty==="micro"){
+                      packInner.micro = packInner.micro || [];
+                      packInner.micro.push(replacement);
+                    }else if(task.difficulty==="standard"){
+                      packInner.standard = packInner.standard || [];
+                      packInner.standard.push(replacement);
+                    }else{
+                      packInner.deep = packInner.deep || [];
+                      packInner.deep.push(replacement);
+                    }
+                    saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+                    // Re-render Today to reflect new pending + done grouping
+                    renderToday();
+                  }
                 }
               });
 
@@ -1024,9 +1108,10 @@
             });
           }
 
-          addGroup("Micro (5–10 mins)", pack.micro, "Micro");
-          addGroup("Standard (15–20 mins)", pack.standard, "Standard");
-          addGroup("Deep (20–30+ mins)", pack.deep, "Deep");
+          addGroup("Micro (5–10 mins)", microPending, "Micro");
+          addGroup("Standard (15–20 mins)", standardPending, "Standard");
+          addGroup("Deep (20–30+ mins)", deepPending, "Deep");
+          addGroup("Done", doneTasks, "Done");
         }
 
         card.appendChild(body);
@@ -1042,6 +1127,9 @@
         var wk = state.weeklyScores[state.weekKey] || {};
         var domains = state.domains;
         if(!domains.length) return;
+
+        var prevKey = getPreviousWeekKeyFromToday();
+        var prevWeek = state.weeklyScores[prevKey] || null;
 
         var scores = domains.map(function(dom, idx){
           var cur = typeof wk[idx]==="number" ? wk[idx] : 0;
@@ -1229,6 +1317,15 @@
           row.appendChild(right);
 
           domainsBody.appendChild(row);
+
+          // Optional last-week line
+          if(prevWeek && typeof prevWeek[info.idx]==="number"){
+            var lastVal = prevWeek[info.idx];
+            var lastLine=document.createElement("div");
+            lastLine.className="insights-secondary";
+            lastLine.textContent="Last week: "+lastVal+"/10";
+            domainsBody.appendChild(lastLine);
+          }
         });
 
         domainsCard.appendChild(domainsBody);
