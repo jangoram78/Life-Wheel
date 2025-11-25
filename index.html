@@ -358,6 +358,61 @@
       display:flex;
       align-items:baseline;
     }
+
+    /* Tasks */
+    .task-group-title{
+      font-size:11px;
+      font-weight:600;
+      color:#475569;
+      margin-top:2px;
+      margin-bottom:2px;
+    }
+    .task-stack{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .task-row{
+      display:flex;
+      align-items:flex-start;
+      gap:6px;
+      font-size:12px;
+      color:#111;
+    }
+    .task-checkbox{
+      width:16px;
+      height:16px;
+      margin-top:1px;
+    }
+    .task-main{
+      flex:1;
+      min-width:0;
+    }
+    .task-label{
+      font-size:12px;
+      line-height:1.3;
+    }
+    .task-meta{
+      font-size:11px;
+      color:#64748b;
+      margin-top:1px;
+    }
+    .task-domain-chip{
+      font-size:10px;
+      padding:1px 6px;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      display:inline-block;
+      margin-top:1px;
+    }
+    .task-done .task-label{
+      text-decoration:line-through;
+      color:#9ca3af;
+    }
+    .task-done .task-meta{
+      color:#9ca3af;
+    }
   </style>
 </head>
 <body>
@@ -470,22 +525,23 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U5";
+      var APP_VERSION = "U6";
 
-      // v3 domain model (6 domains) – same keys as U4
-      var STORAGE_KEY_DOMAINS = "lw_domains_v3";
+      // Storage keys
+      var STORAGE_KEY_DOMAINS = "lw_domains_v3";      // 6-domain model
       var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v3";
       var STORAGE_KEY_MONTHLY = "lw_monthly_scores_v3";
+      var STORAGE_KEY_TASKS   = "lw_tasks_v1";
 
       // Definitive domain + subdomain model, in aesthetic wheel order:
       // Mental → Physical → Work & Purpose → Social → Emotional → Spiritual
       var defaultDomains = [
-        { name:"Mental", sub:["Logic","Knowledge","Skill"] },
-        { name:"Physical", sub:["Strength","Stamina","Health","Mobility"] },
-        { name:"Work & Purpose", sub:["Career","Mastery","Finance","Legacy"] },
-        { name:"Social", sub:["Family","Friends","Colleagues","Civic Contribution"] },
-        { name:"Emotional", sub:["Emotional Stability & Regulation","Joy","Identity"] },
-        { name:"Spiritual", sub:["Philosophy","Virtue"] }
+        { name:"Mental",          sub:["Logic","Knowledge","Skill"] },
+        { name:"Physical",        sub:["Strength","Stamina","Health","Mobility"] },
+        { name:"Work & Purpose",  sub:["Career","Mastery","Finance","Legacy"] },
+        { name:"Social",          sub:["Family","Friends","Colleagues","Civic Contribution"] },
+        { name:"Emotional",       sub:["Emotional Stability & Regulation","Joy","Identity"] },
+        { name:"Spiritual",       sub:["Philosophy","Virtue"] }
       ];
 
       function loadJSON(key,fallback){
@@ -512,7 +568,6 @@
         var d=new Date(),year=d.getFullYear(),m=d.getMonth()+1;
         return year+"-"+(m<10?"0"+m:m);
       }
-
       function getPreviousWeekKeyFromToday(){
         var d=new Date();
         d.setDate(d.getDate()-7);
@@ -523,13 +578,24 @@
         var week=Math.ceil(((diff/dayMS)+day)/7);
         return year+"-W"+(week<10?"0"+week:week);
       }
+      function getTodayKey(){
+        var d=new Date();
+        var y=d.getFullYear();
+        var m=d.getMonth()+1;
+        var dm=d.getDate();
+        var mm=(m<10?"0"+m:m);
+        var dd=(dm<10?"0"+dm:dm);
+        return y+"-"+mm+"-"+dd;
+      }
 
       var state={
         domains:[],
         weeklyScores:{},
         monthlyScores:{},
+        tasksByDate:{},
         weekKey:getWeekKey(),
-        monthKey:getMonthKey()
+        monthKey:getMonthKey(),
+        todayKey:getTodayKey()
       };
 
       function initState(){
@@ -545,6 +611,7 @@
 
         state.weeklyScores=loadJSON(STORAGE_KEY_WEEKLY,{});
         state.monthlyScores=loadJSON(STORAGE_KEY_MONTHLY,{});
+        state.tasksByDate=loadJSON(STORAGE_KEY_TASKS,{});
 
         if(!state.weeklyScores[state.weekKey])state.weeklyScores[state.weekKey]={};
         if(!state.monthlyScores[state.monthKey])state.monthlyScores[state.monthKey]={};
@@ -559,6 +626,8 @@
               state.monthlyScores[state.monthKey][idx][sIdx]=0;
           });
         });
+
+        ensureTasksForToday();
       }
 
       var todayContainer=document.getElementById("todayContent"),
@@ -591,13 +660,193 @@
         periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey+" · "+APP_VERSION;
       }
 
-      // --- TODAY RENDERING ---
+      // --- Neglect helper ---
 
       function deriveNeglect(score){
         if(score>=7) return "none";
         if(score>=4) return "medium";
         return "serious";
       }
+
+      // --- Task generation & rendering ---
+
+      function ensureTasksForToday(){
+        var todayKey = state.todayKey;
+        if(!state.tasksByDate[todayKey]){
+          state.tasksByDate[todayKey]={micro:[],standard:[],deep:[]};
+        }
+        var pack = state.tasksByDate[todayKey];
+        var hasAny = (pack.micro && pack.micro.length) ||
+                     (pack.standard && pack.standard.length) ||
+                     (pack.deep && pack.deep.length);
+        if(hasAny){
+          return; // don't overwrite existing tasks for today
+        }
+
+        var wk = state.weeklyScores[state.weekKey] || {};
+        var domains = state.domains;
+
+        var domainInfo = domains.map(function(dom, idx){
+          var score = typeof wk[idx]==="number" ? wk[idx] : 0;
+          var neglect = deriveNeglect(score);
+          var neglectRank = (neglect==="serious"?2:(neglect==="medium"?1:0));
+          return {
+            idx: idx,
+            name: dom.name,
+            score: score,
+            neglect: neglect,
+            neglectRank: neglectRank
+          };
+        });
+
+        // Sort by neglect rank desc, then score asc (worst first)
+        domainInfo.sort(function(a,b){
+          if(b.neglectRank!==a.neglectRank){
+            return b.neglectRank - a.neglectRank;
+          }
+          return a.score - b.score;
+        });
+
+        // Filter to those with any neglect; if none, just use lowest scoring
+        var neglected = domainInfo.filter(function(d){ return d.neglect!=="none"; });
+        var focus = neglected.length ? neglected : domainInfo;
+
+        // Take up to 3 focus domains
+        focus = focus.slice(0,3);
+
+        pack.micro = [];
+        pack.standard = [];
+        pack.deep = pack.deep || [];
+
+        focus.forEach(function(d,i){
+          var idBase = todayKey+"-"+d.idx+"-"+i;
+
+          pack.micro.push({
+            id: idBase+"-m",
+            domainIdx: d.idx,
+            difficulty: "micro",
+            label: "Do a 5–10 min action for "+d.name+" (placeholder – refine later).",
+            energyCost: 3,
+            expectedDuration: 10,
+            state: "pending"
+          });
+
+          pack.standard.push({
+            id: idBase+"-s",
+            domainIdx: d.idx,
+            difficulty: "standard",
+            label: "Do a 15–20 min focused session on "+d.name+" (placeholder – refine later).",
+            energyCost: 5,
+            expectedDuration: 20,
+            state: "pending"
+          });
+
+          // No auto deep tasks yet – leave for future versions
+        });
+
+        state.tasksByDate[todayKey] = pack;
+        saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+      }
+
+      function renderTasksToday(container){
+        var todayKey = state.todayKey;
+        var pack = state.tasksByDate[todayKey];
+        if(!pack){
+          return;
+        }
+
+        var hasAny = (pack.micro && pack.micro.length) ||
+                     (pack.standard && pack.standard.length) ||
+                     (pack.deep && pack.deep.length);
+
+        var card=document.createElement("div");
+        card.className="card";
+
+        var header=document.createElement("div");
+        header.className="card-header";
+
+        var title=document.createElement("div");
+        title.className="card-title";
+        title.textContent="Today’s tasks";
+
+        header.appendChild(title);
+        card.appendChild(header);
+
+        var body=document.createElement("div");
+        body.className="task-stack";
+
+        if(!hasAny){
+          var msg=document.createElement("div");
+          msg.className="insights-secondary";
+          msg.textContent="No tasks generated yet.";
+          body.appendChild(msg);
+        }else{
+          function addGroup(titleText, list, difficultyLabel){
+            if(!list || !list.length) return;
+            var gTitle=document.createElement("div");
+            gTitle.className="task-group-title";
+            gTitle.textContent=titleText;
+            body.appendChild(gTitle);
+
+            list.forEach(function(task){
+              var row=document.createElement("div");
+              row.className="task-row";
+              if(task.state==="done"){
+                row.classList.add("task-done");
+              }
+
+              var checkbox=document.createElement("input");
+              checkbox.type="checkbox";
+              checkbox.className="task-checkbox";
+              checkbox.checked = (task.state==="done");
+
+              checkbox.addEventListener("change",function(){
+                task.state = checkbox.checked ? "done" : "pending";
+                if(task.state==="done"){
+                  row.classList.add("task-done");
+                }else{
+                  row.classList.remove("task-done");
+                }
+                saveJSON(STORAGE_KEY_TASKS,state.tasksByDate);
+              });
+
+              var main=document.createElement("div");
+              main.className="task-main";
+
+              var label=document.createElement("div");
+              label.className="task-label";
+              label.textContent=task.label;
+
+              var meta=document.createElement("div");
+              meta.className="task-meta";
+              meta.textContent=difficultyLabel+" · ~"+task.expectedDuration+" mins · energy "+task.energyCost+"/10";
+
+              var chip=document.createElement("div");
+              chip.className="task-domain-chip";
+              var domName = (state.domains[task.domainIdx] && state.domains[task.domainIdx].name) || "Domain";
+              chip.textContent=domName;
+
+              main.appendChild(label);
+              main.appendChild(meta);
+              main.appendChild(chip);
+
+              row.appendChild(checkbox);
+              row.appendChild(main);
+
+              body.appendChild(row);
+            });
+          }
+
+          addGroup("Micro (5–10 mins)", pack.micro, "Micro");
+          addGroup("Standard (15–20 mins)", pack.standard, "Standard");
+          addGroup("Deep (20–30+ mins)", pack.deep, "Deep");
+        }
+
+        card.appendChild(body);
+        container.appendChild(card);
+      }
+
+      // --- TODAY RENDERING ---
 
       function renderToday(){
         if(!todayContainer)return;
@@ -718,9 +967,12 @@
 
         domainsCard.appendChild(domainsBody);
         todayContainer.appendChild(domainsCard);
+
+        // Tasks card
+        renderTasksToday(todayContainer);
       }
 
-      // --- WEEKLY / MONTHLY / SETTINGS / INSIGHTS (mostly as before) ---
+      // --- WEEKLY / MONTHLY / SETTINGS / INSIGHTS ---
 
       function renderWeekly(){
         weeklyContainer.innerHTML="";
@@ -1046,18 +1298,18 @@
           if(v>maxVal)v=maxVal;
           var rrVal=radius*(v/maxVal);
 
-        var segStart=base+step*k;
-        var segEnd=segStart+step;
+          var segStart=base+step*k;
+          var segEnd=segStart+step;
 
-        ctx.beginPath();
-        ctx.moveTo(cx,cy);
-        ctx.arc(cx,cy,rrVal,segStart,segEnd);
-        ctx.closePath();
-        ctx.fillStyle="rgba(93,168,255,0.23)";
-        ctx.fill();
-        ctx.strokeStyle="rgba(37,99,235,0.9)";
-        ctx.lineWidth=1;
-        ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx,cy);
+          ctx.arc(cx,cy,rrVal,segStart,segEnd);
+          ctx.closePath();
+          ctx.fillStyle="rgba(93,168,255,0.23)";
+          ctx.fill();
+          ctx.strokeStyle="rgba(37,99,235,0.9)";
+          ctx.lineWidth=1;
+          ctx.stroke();
         }
       }
 
@@ -1309,39 +1561,11 @@
         renderToday();
       }
 
-      function onResize(){drawRadarFromState()}
-
-      function cleanupScores(){
-        Object.keys(state.weeklyScores).forEach(function(weekKey){
-          var wk=state.weeklyScores[weekKey];
-          var newW={};
-          state.domains.forEach(function(_,idx){
-            newW[idx]=typeof wk[idx]==="number"?wk[idx]:0;
-          });
-          state.weeklyScores[weekKey]=newW;
-        });
-
-        Object.keys(state.monthlyScores).forEach(function(monthKey){
-          var mk=state.monthlyScores[monthKey];
-          var newM={};
-          state.domains.forEach(function(dom,idx){
-            newM[idx]=newM[idx]||{};
-            dom.sub.forEach(function(_,sIdx){
-              if(!mk[idx])mk[idx]={};
-              newM[idx][sIdx]=typeof mk[idx][sIdx]==="number"?mk[idx][sIdx]:0;
-            });
-          });
-          state.monthlyScores[monthKey]=newM;
-        });
-
-        saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);
-        saveJSON(STORAGE_KEY_MONTHLY,state.monthlyScores);
-      }
-
       initState();
       bindTabs();
       bindAddDomain();
       renderAll();
+
       window.addEventListener("resize",function(){
         clearTimeout(window.__lwResizeTimer);
         window.__lwResizeTimer=setTimeout(function(){
@@ -1349,128 +1573,6 @@
         },180);
       });
 
-      function drawRadarFromState(){
-        if(!radarCanvas)return;
-        var wk=state.weeklyScores[state.weekKey]||{};
-        var labels=state.domains.map(function(d){return d.name});
-        var vals=state.domains.map(function(_,idx){
-          var v=wk[idx];
-          return typeof v==="number"?v:0;
-        });
-        drawRadar(radarCanvas,labels,vals);
-      }
-
-      function drawRadar(canvas,labels,values){
-        var n=labels.length;
-        if(!n)return;
-
-        var dpr=window.devicePixelRatio||1;
-        var rect=canvas.getBoundingClientRect();
-        var size=Math.min(rect.width||260,320)*0.7;
-        canvas.width=size*dpr;
-        canvas.height=size*dpr;
-
-        var ctx=canvas.getContext("2d");
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-        ctx.clearRect(0,0,size,size);
-
-        var cx=size/2,cy=size/2;
-        var radius=size*0.42;
-        var maxVal=10;
-        var step=(Math.PI*2)/n;
-        var base=-Math.PI/2;
-
-        ctx.strokeStyle="#e5e7eb";
-        ctx.lineWidth=1;
-        var rings=4;
-        for(var r=1;r<=rings;r++){
-          ctx.beginPath();
-          var rr=radius*r/rings;
-          ctx.arc(cx,cy,rr,0,Math.PI*2);
-          ctx.stroke();
-        }
-
-        for(var i=0;i<n;i++){
-          var angle=base+step*i;
-          var x=cx+radius*Math.cos(angle);
-          var y=cy+radius*Math.sin(angle);
-          ctx.beginPath();
-          ctx.moveTo(cx,cy);
-          ctx.lineTo(x,y);
-          ctx.stroke();
-        }
-
-        ctx.fillStyle="#1f2933";
-        ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
-        var labelRadius=radius*0.93;
-        var maxLabelWidth=radius*0.6;
-
-        for(var j=0;j<n;j++){
-          var startAng=base+step*j;
-          var centerAng=startAng+step/2;
-          var lx=cx+labelRadius*Math.cos(centerAng);
-          var ly=cy+labelRadius*Math.sin(centerAng);
-
-          var text=labels[j];
-          var lines=wrapTextLines(ctx,text,maxLabelWidth);
-          var lineHeight=10;
-
-          var ca=Math.cos(centerAng);
-          var align;
-          if(Math.abs(ca)<0.15){
-            align="center";
-          }else if(ca>0){
-            align="right";
-          }else{
-            align="left";
-          }
-          ctx.textAlign=align;
-
-          var baselineShift=(lines.length-1)*lineHeight/2;
-          for(var li=0;li<lines.length;li++){
-            var offsetY=-baselineShift+li*lineHeight;
-            ctx.textBaseline="middle";
-            ctx.fillText(lines[li],lx,ly+offsetY);
-          }
-        }
-
-        for(var k=0;k<n;k++){
-          var v=values[k];
-          if(v<=0)continue;
-          if(v>maxVal)v=maxVal;
-          var rrVal=radius*(v/maxVal);
-
-          var segStart=base+step*k;
-          var segEnd=segStart+step;
-
-          ctx.beginPath();
-          ctx.moveTo(cx,cy);
-          ctx.arc(cx,cy,rrVal,segStart,segEnd);
-          ctx.closePath();
-          ctx.fillStyle="rgba(93,168,255,0.23)";
-          ctx.fill();
-          ctx.strokeStyle="rgba(37,99,235,0.9)";
-          ctx.lineWidth=1;
-          ctx.stroke();
-        }
-      }
-
-      function wrapTextLines(ctx,text,maxWidth){
-        var words=text.split(" ");
-        var lines=[];
-        var current=words[0]||"";
-        for(var i=1;i<words.length;i++){
-          var test=current+" "+words[i];
-          if(ctx.measureText(test).width<=maxWidth){
-            current=test;
-          }else{
-            lines.push(current);
-            current=words[i];
-          }
-        }
-        lines.push(current);
-        return lines;
-      }
     })();
   </script>
 </body>
