@@ -406,20 +406,22 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U3";
+      var APP_VERSION = "U4";
 
-      var STORAGE_KEY_DOMAINS = "lw_domains_v2";
-      var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v2";
-      var STORAGE_KEY_MONTHLY = "lw_monthly_scores_v2";
+      // Bump to v3 to align with new 6-domain model (cleans old data safely)
+      var STORAGE_KEY_DOMAINS = "lw_domains_v3";
+      var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v3";
+      var STORAGE_KEY_MONTHLY = "lw_monthly_scores_v3";
 
+      // Definitive domain + subdomain model, in aesthetic wheel order:
+      // Mental → Physical → Work & Purpose → Social → Emotional → Spiritual
       var defaultDomains = [
         { name:"Mental", sub:["Logic","Knowledge","Skill"] },
         { name:"Physical", sub:["Strength","Stamina","Health","Mobility"] },
-        { name:"Spiritual", sub:["Belief","Philosophy","Death Awareness","Virtue","Self-Control"] },
-        { name:"Emotional", sub:["Resilience","Joy","Stress Management","Identity"] },
-        { name:"Environmental", sub:["Sustainability","Reducing Impact"] },
         { name:"Work & Purpose", sub:["Career","Mastery","Finance","Legacy"] },
-        { name:"Social", sub:["Family","Friends","Colleagues","Civic Contribution"] }
+        { name:"Social", sub:["Family","Friends","Colleagues","Civic Contribution"] },
+        { name:"Emotional", sub:["Emotional Stability & Regulation","Joy","Identity"] },
+        { name:"Spiritual", sub:["Philosophy","Virtue"] }
       ];
 
       function loadJSON(key,fallback){
