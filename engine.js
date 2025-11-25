@@ -10,7 +10,7 @@
     storeName: "lifewheel_state"
   });
 
-  var STATE_KEY = "userState_v1";
+  var STATE_KEY = "userState_v2";
 
   // ----- Domain model (Option A, definitive) -----
   var defaultDomains = [
@@ -93,7 +93,7 @@
   }
 
   // ----- Unified state structure -----
-  var userState = null;
+  var  = null;
 
   function buildDefaultState(){
     var todayKey = getTodayKey();
@@ -140,7 +140,7 @@
     };
   }
 
-  function ensureCurrentFrames(){
+function ensureCurrentFrames(){
     var todayKey = getTodayKey();
     var weekKey  = getWeekKey();
     var monthKey = getMonthKey();
@@ -149,45 +149,59 @@
     userState.weekKey  = weekKey;
     userState.monthKey = monthKey;
 
+    // Make sure the containers exist
+    if (!userState.weeklyScores || typeof userState.weeklyScores !== "object") {
+      userState.weeklyScores = {};
+    }
+    if (!userState.monthlyScores || typeof userState.monthlyScores !== "object") {
+      userState.monthlyScores = {};
+    }
+    if (!userState.tasks || typeof userState.tasks !== "object") {
+      userState.tasks = {};
+    }
+    if (!userState.templates || typeof userState.templates !== "object") {
+      userState.templates = {};
+    }
+
     // Ensure weekly frame
-    if(!userState.weeklyScores[weekKey]){
+    if (!userState.weeklyScores[weekKey]) {
       userState.weeklyScores[weekKey] = {};
-      for(var i=0;i<userState.domains.length;i++){
+      for (var i = 0; i < userState.domains.length; i++) {
         userState.weeklyScores[weekKey][i] = 0;
       }
-    }else{
-      for(var i2=0;i2<userState.domains.length;i2++){
-        if(typeof userState.weeklyScores[weekKey][i2]!=="number"){
+    } else {
+      for (var i2 = 0; i2 < userState.domains.length; i2++) {
+        if (typeof userState.weeklyScores[weekKey][i2] !== "number") {
           userState.weeklyScores[weekKey][i2] = 0;
         }
       }
     }
 
     // Ensure monthly frame
-    if(!userState.monthlyScores[monthKey]){
+    if (!userState.monthlyScores[monthKey]) {
       userState.monthlyScores[monthKey] = {};
     }
-    for(var dIdx=0; dIdx<userState.domains.length; dIdx++){
-      if(!userState.monthlyScores[monthKey][dIdx]){
+    for (var dIdx = 0; dIdx < userState.domains.length; dIdx++) {
+      if (!userState.monthlyScores[monthKey][dIdx]) {
         userState.monthlyScores[monthKey][dIdx] = {};
       }
-      for(var sIdx=0; sIdx<userState.domains[dIdx].sub.length; sIdx++){
-        if(typeof userState.monthlyScores[monthKey][dIdx][sIdx]!=="number"){
+      for (var sIdx = 0; sIdx < userState.domains[dIdx].sub.length; sIdx++) {
+        if (typeof userState.monthlyScores[monthKey][dIdx][sIdx] !== "number") {
           userState.monthlyScores[monthKey][dIdx][sIdx] = 0;
         }
       }
     }
 
     // Ensure tasks slot for today
-    if(!userState.tasks[todayKey]){
-      userState.tasks[todayKey] = { pending:[], done:[] };
-    }else{
-      // Guarantee both arrays exist
+    if (!userState.tasks[todayKey]) {
+      userState.tasks[todayKey] = { pending: [], done: [] };
+    } else {
       var pack = userState.tasks[todayKey];
-      if(!Array.isArray(pack.pending)) pack.pending = [];
-      if(!Array.isArray(pack.done))    pack.done = [];
+      if (!Array.isArray(pack.pending)) pack.pending = [];
+      if (!Array.isArray(pack.done))    pack.done = [];
     }
-  }
+}
+
 
   function ensureTemplateSlot(domainIdx, subIdx){
     if(!userState.templates[domainIdx]){
@@ -494,26 +508,40 @@
   // ----- Public API -----
 
   async function init(){
-    var stored = await localforage.getItem(STATE_KEY);
-    if(stored && typeof stored==="object"){
-      userState = stored;
-    }else{
-      userState = buildDefaultState();
+  var stored = await localforage.getItem(STATE_KEY);
+
+  if (stored && typeof stored === "object") {
+    userState = stored;
+
+    // --- Migration / safety guards ---
+    if (!userState.domains || !Array.isArray(userState.domains) || !userState.domains.length) {
+      userState.domains = defaultDomains.map(function(d){
+        return { name: d.name, sub: d.sub.slice(0) };
+      });
     }
 
-    // Ensure frames & today's tasks
-    ensureCurrentFrames();
-    ensureTasksForToday(false);
-    await saveState();
+    if (!userState.weeklyScores || typeof userState.weeklyScores !== "object") {
+      userState.weeklyScores = {};
+    }
+    if (!userState.monthlyScores || typeof userState.monthlyScores !== "object") {
+      userState.monthlyScores = {};
+    }
+    if (!userState.tasks || typeof userState.tasks !== "object") {
+      userState.tasks = {};
+    }
+    if (!userState.templates || typeof userState.templates !== "object") {
+      userState.templates = {};
+    }
+
+  } else {
+    userState = buildDefaultState();
   }
 
-  function getState(){
-    return userState;
-  }
-
-  function getDomains(){
-    return userState.domains;
-  }
+  // Ensure frames & today's tasks
+  ensureCurrentFrames();
+  ensureTasksForToday(false);
+  await saveState();
+}
 
   function getPeriodInfo(){
     return {
