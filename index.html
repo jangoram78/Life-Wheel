@@ -282,6 +282,36 @@
     @supports not (backdrop-filter:blur(10px)){
       .tabbar-inner{background:#fff}
     }
+
+    /* Insights-specific bits */
+    .insights-stack{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .insights-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      margin-top:2px;
+    }
+    .insights-label{
+      font-size:12px;
+      color:#111;
+    }
+    .insights-score{
+      font-size:12px;
+      color:#334155;
+    }
+    .insights-delta{
+      font-size:11px;
+      margin-left:6px;
+    }
+    .insights-secondary{
+      font-size:11px;
+      color:#64748b;
+      margin-top:2px;
+    }
   </style>
 </head>
 <body>
@@ -302,6 +332,13 @@
       <div class="section">
         <div class="section-title">Weekly scores</div>
         <div id="weeklyDomains"></div>
+      </div>
+    </div>
+
+    <div id="insightsView" class="view">
+      <div class="section">
+        <div class="section-title">Weekly insights</div>
+        <div id="insightsContent"></div>
       </div>
     </div>
 
@@ -343,6 +380,12 @@
           <div class="tab-label">Weekly</div>
         </div>
       </button>
+      <button class="tab-btn" data-view="insightsView">
+        <div class="tab-pill">
+          <div class="tab-icon">📘</div>
+          <div class="tab-label">Insights</div>
+        </div>
+      </button>
       <button class="tab-btn" data-view="monthlyView">
         <div class="tab-pill">
           <div class="tab-icon">📊</div>
@@ -362,8 +405,8 @@
     (function(){
       "use strict";
 
-      // Build marker – bumped each time
-      var APP_VERSION = "U2";
+      // Build marker – bump this each release
+      var APP_VERSION = "U3";
 
       var STORAGE_KEY_DOMAINS = "lw_domains_v2";
       var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v2";
@@ -402,6 +445,17 @@
       function getMonthKey(){
         var d=new Date(),year=d.getFullYear(),m=d.getMonth()+1;
         return year+"-"+(m<10?"0"+m:m);
+      }
+
+      function getPreviousWeekKeyFromToday(){
+        var d=new Date();
+        d.setDate(d.getDate()-7);
+        var year=d.getFullYear(),oneJan=new Date(year,0,1);
+        var dayMS=24*60*60*1000;
+        var diff=d-oneJan;
+        var day=oneJan.getDay()||7;
+        var week=Math.ceil(((diff/dayMS)+day)/7);
+        return year+"-W"+(week<10?"0"+week:week);
       }
 
       var state={
@@ -444,11 +498,13 @@
       var weeklyContainer=document.getElementById("weeklyDomains"),
           monthlyContainer=document.getElementById("monthlyDomains"),
           settingsContainer=document.getElementById("settingsDomains"),
+          insightsContainer=document.getElementById("insightsContent"),
           periodLabel=document.getElementById("periodLabel"),
           toastEl=document.getElementById("toast"),
           radarCanvas=document.getElementById("weeklyRadar"),
           views={
             weeklyView:document.getElementById("weeklyView"),
+            insightsView:document.getElementById("insightsView"),
             monthlyView:document.getElementById("monthlyView"),
             settingsView:document.getElementById("settingsView")
           };
@@ -509,6 +565,7 @@
             value.textContent=v+"/10";
             saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);
             drawRadarFromState();
+            renderInsights();
             showToast("Saved ✓");
           });
 
@@ -598,9 +655,11 @@
           inputName.addEventListener("change",function(e){
             state.domains[idx].name=e.target.value||("Domain "+(idx+1));
             saveJSON(STORAGE_KEY_DOMAINS,state.domains);
+            cleanupScores();
             renderWeekly();
             renderMonthly();
             drawRadarFromState();
+            renderInsights();
             showToast("Saved ✓");
           });
 
@@ -639,6 +698,7 @@
             renderMonthly();
             renderWeekly();
             drawRadarFromState();
+            renderInsights();
             showToast("Saved ✓");
           });
 
@@ -710,7 +770,6 @@
 
         var dpr=window.devicePixelRatio||1;
         var rect=canvas.getBoundingClientRect();
-        // slightly smaller overall canvas
         var size=Math.min(rect.width||260,320)*0.7;
         canvas.width=size*dpr;
         canvas.height=size*dpr;
@@ -720,7 +779,7 @@
         ctx.clearRect(0,0,size,size);
 
         var cx=size/2,cy=size/2;
-        var radius=size*0.42;     // main circle
+        var radius=size*0.42;
         var maxVal=10;
         var step=(Math.PI*2)/n;
         var base=-Math.PI/2;
@@ -745,11 +804,10 @@
           ctx.stroke();
         }
 
-        // labels: a bit further out, wrapped
         ctx.fillStyle="#1f2933";
         ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
-        var labelRadius=radius*0.93;          // moved outward
-        var maxLabelWidth=radius*0.6;         // narrower for nicer wrapping
+        var labelRadius=radius*0.93;
+        var maxLabelWidth=radius*0.6;
 
         for(var j=0;j<n;j++){
           var startAng=base+step*j;
@@ -801,6 +859,216 @@
         }
       }
 
+      function renderInsights(){
+        if(!insightsContainer)return;
+        insightsContainer.innerHTML="";
+
+        var wk = state.weeklyScores[state.weekKey] || {};
+        var prevKey = getPreviousWeekKeyFromToday();
+        var prevWeek = state.weeklyScores[prevKey] || null;
+
+        var domains = state.domains;
+        if(!domains.length)return;
+
+        var scores = domains.map(function(dom, idx){
+          var cur = typeof wk[idx]==="number" ? wk[idx] : 0;
+          return cur;
+        });
+
+        var total=0, count=0;
+        scores.forEach(function(v){
+          total+=v;
+          count++;
+        });
+        var avg = count? (total/count):0;
+        var avgDisplay = avg.toFixed(1);
+
+        var maxScore=-Infinity, minScore=Infinity;
+        var maxIdx=0, minIdx=0;
+        scores.forEach(function(v,idx){
+          if(v>maxScore){maxScore=v;maxIdx=idx;}
+          if(v<minScore){minScore=v;minIdx=idx;}
+        });
+
+        // Summary card
+        var summaryCard=document.createElement("div");
+        summaryCard.className="card";
+
+        var summaryHeader=document.createElement("div");
+        summaryHeader.className="card-header";
+
+        var summaryTitle=document.createElement("div");
+        summaryTitle.className="card-title";
+        summaryTitle.textContent="This week at a glance";
+
+        var summaryValue=document.createElement("div");
+        summaryValue.className="card-value";
+        summaryValue.textContent="Avg "+avgDisplay+"/10";
+
+        summaryHeader.appendChild(summaryTitle);
+        summaryHeader.appendChild(summaryValue);
+        summaryCard.appendChild(summaryHeader);
+
+        var summaryBody=document.createElement("div");
+        summaryBody.className="insights-stack";
+
+        var bestLine=document.createElement("div");
+        bestLine.className="insights-secondary";
+        bestLine.textContent="Strongest: "+domains[maxIdx].name+" ("+maxScore+"/10)";
+
+        var worstLine=document.createElement("div");
+        worstLine.className="insights-secondary";
+        worstLine.textContent="Weakest: "+domains[minIdx].name+" ("+minScore+"/10)";
+
+        summaryBody.appendChild(bestLine);
+        summaryBody.appendChild(worstLine);
+        summaryCard.appendChild(summaryBody);
+
+        insightsContainer.appendChild(summaryCard);
+
+        // Deltas card
+        var deltasCard=document.createElement("div");
+        deltasCard.className="card";
+
+        var deltasHeader=document.createElement("div");
+        deltasHeader.className="card-header";
+
+        var deltasTitle=document.createElement("div");
+        deltasTitle.className="card-title";
+        deltasTitle.textContent="Week-over-week change";
+
+        deltasHeader.appendChild(deltasTitle);
+        deltasCard.appendChild(deltasHeader);
+
+        var deltasBody=document.createElement("div");
+        deltasBody.className="insights-stack";
+
+        var deltasData = [];
+
+        domains.forEach(function(dom,idx){
+          var cur = scores[idx];
+          var prevVal = prevWeek && typeof prevWeek[idx]==="number" ? prevWeek[idx] : null;
+          var delta = (prevVal===null)? null : (cur - prevVal);
+
+          deltasData.push({idx:idx,cur:cur,prev:prevVal,delta:delta});
+
+          var row=document.createElement("div");
+          row.className="insights-row";
+
+          var label=document.createElement("div");
+          label.className="insights-label";
+          label.textContent=dom.name;
+
+          var right=document.createElement("div");
+          right.style.display="flex";
+          right.style.alignItems="baseline";
+
+          var scoreEl=document.createElement("div");
+          scoreEl.className="insights-score";
+          scoreEl.textContent=cur+"/10";
+
+          var deltaEl=document.createElement("div");
+          deltaEl.className="insights-delta";
+
+          if(delta===null){
+            deltaEl.textContent="–";
+            deltaEl.style.color="#94a3b8";
+          }else if(delta>0){
+            deltaEl.textContent="▲ +"+delta;
+            deltaEl.style.color="#16a34a";
+          }else if(delta<0){
+            deltaEl.textContent="▼ "+delta;
+            deltaEl.style.color="#dc2626";
+          }else{
+            deltaEl.textContent="–";
+            deltaEl.style.color="#94a3b8";
+          }
+
+          right.appendChild(scoreEl);
+          right.appendChild(deltaEl);
+
+          row.appendChild(label);
+          row.appendChild(right);
+
+          deltasBody.appendChild(row);
+        });
+
+        deltasCard.appendChild(deltasBody);
+        insightsContainer.appendChild(deltasCard);
+
+        // Focus suggestion
+        var focusCard=document.createElement("div");
+        focusCard.className="card";
+
+        var focusHeader=document.createElement("div");
+        focusHeader.className="card-header";
+
+        var focusTitle=document.createElement("div");
+        focusTitle.className="card-title";
+        focusTitle.textContent="Suggested focus for next week";
+
+        focusHeader.appendChild(focusTitle);
+        focusCard.appendChild(focusHeader);
+
+        var focusBody=document.createElement("div");
+        focusBody.className="insights-stack";
+
+        var anyData = scores.some(function(v){return v>0;}) ||
+                      (prevWeek && Object.keys(prevWeek).length>0);
+
+        if(!anyData){
+          var msg=document.createElement("div");
+          msg.className="insights-secondary";
+          msg.textContent="Not enough weekly data yet. Add some scores to see a focus suggestion.";
+          focusBody.appendChild(msg);
+        }else{
+          var minScoreForFocus = Math.min.apply(null,scores);
+          var candidateIndices = [];
+          scores.forEach(function(v,idx){
+            if(v===minScoreForFocus)candidateIndices.push(idx);
+          });
+
+          var focusIdx = candidateIndices[0];
+          if(prevWeek){
+            var bestIdx = focusIdx;
+            var bestDelta = null;
+            candidateIndices.forEach(function(ci){
+              var d = deltasData[ci].delta;
+              if(d===null)return;
+              if(bestDelta===null || d<bestDelta){
+                bestDelta = d;
+                bestIdx = ci;
+              }
+            });
+            focusIdx = bestIdx;
+          }
+
+          var fd = deltasData[focusIdx];
+          var line1=document.createElement("div");
+          line1.className="insights-label";
+          line1.textContent=domains[focusIdx].name;
+
+          var line2=document.createElement("div");
+          line2.className="insights-secondary";
+          var text="Current: "+fd.cur+"/10";
+          if(fd.delta!==null && fd.delta!==0){
+            text+=" · Change vs last week: ";
+            if(fd.delta>0){
+              text+="▲ +"+fd.delta;
+            }else{
+              text+="▼ "+fd.delta;
+            }
+          }
+          line2.textContent=text;
+
+          focusBody.appendChild(line1);
+          focusBody.appendChild(line2);
+        }
+
+        focusCard.appendChild(focusBody);
+        insightsContainer.appendChild(focusCard);
+      }
+
       function bindTabs(){
         var buttons=document.querySelectorAll(".tab-btn");
         buttons.forEach(function(btn){
@@ -835,6 +1103,7 @@
         renderMonthly();
         renderSettings();
         drawRadarFromState();
+        renderInsights();
       }
 
       function onResize(){drawRadarFromState()}
