@@ -283,7 +283,7 @@
       .tabbar-inner{background:#fff}
     }
 
-    /* Insights-specific bits */
+    /* Insights-specific */
     .insights-stack{
       display:flex;
       flex-direction:column;
@@ -312,6 +312,52 @@
       color:#64748b;
       margin-top:2px;
     }
+
+    /* Today-specific */
+    .today-stack{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .badge-neglect{
+      font-size:10px;
+      padding:2px 6px;
+      border-radius:999px;
+      margin-left:6px;
+      border:1px solid transparent;
+    }
+    .badge-none{
+      background:#dcfce7;
+      color:#166534;
+      border-color:#bbf7d0;
+    }
+    .badge-medium{
+      background:#fef9c3;
+      color:#854d0e;
+      border-color:#fde68a;
+    }
+    .badge-serious{
+      background:#fee2e2;
+      color:#b91c1c;
+      border-color:#fecaca;
+    }
+    .today-domain-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      margin-top:2px;
+    }
+    .today-domain-label{
+      font-size:12px;
+      color:#111;
+    }
+    .today-domain-score{
+      font-size:12px;
+      color:#334155;
+      white-space:nowrap;
+      display:flex;
+      align-items:baseline;
+    }
   </style>
 </head>
 <body>
@@ -321,7 +367,16 @@
       <div class="app-subtitle" id="periodLabel"></div>
     </div>
 
-    <div id="weeklyView" class="view active">
+    <!-- TODAY VIEW -->
+    <div id="todayView" class="view active">
+      <div class="section">
+        <div class="section-title">Today</div>
+        <div id="todayContent"></div>
+      </div>
+    </div>
+
+    <!-- WEEKLY VIEW -->
+    <div id="weeklyView" class="view">
       <div class="section">
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
@@ -335,6 +390,7 @@
       </div>
     </div>
 
+    <!-- INSIGHTS VIEW -->
     <div id="insightsView" class="view">
       <div class="section">
         <div class="section-title">Weekly insights</div>
@@ -342,6 +398,7 @@
       </div>
     </div>
 
+    <!-- MONTHLY VIEW -->
     <div id="monthlyView" class="view">
       <div class="section">
         <div class="section-title">Monthly subdomain scores</div>
@@ -349,6 +406,7 @@
       </div>
     </div>
 
+    <!-- SETTINGS VIEW -->
     <div id="settingsView" class="view">
       <div class="section">
         <div class="section-title">Domains</div>
@@ -374,7 +432,13 @@
 
   <div class="tabbar">
     <div class="tabbar-inner">
-      <button class="tab-btn active" data-view="weeklyView">
+      <button class="tab-btn active" data-view="todayView">
+        <div class="tab-pill">
+          <div class="tab-icon">🌅</div>
+          <div class="tab-label">Today</div>
+        </div>
+      </button>
+      <button class="tab-btn" data-view="weeklyView">
         <div class="tab-pill">
           <div class="tab-icon">🗓️</div>
           <div class="tab-label">Weekly</div>
@@ -406,9 +470,9 @@
       "use strict";
 
       // Build marker – bump this each release
-      var APP_VERSION = "U4";
+      var APP_VERSION = "U5";
 
-      // Bump to v3 to align with new 6-domain model (cleans old data safely)
+      // v3 domain model (6 domains) – same keys as U4
       var STORAGE_KEY_DOMAINS = "lw_domains_v3";
       var STORAGE_KEY_WEEKLY  = "lw_weekly_scores_v3";
       var STORAGE_KEY_MONTHLY = "lw_monthly_scores_v3";
@@ -497,7 +561,8 @@
         });
       }
 
-      var weeklyContainer=document.getElementById("weeklyDomains"),
+      var todayContainer=document.getElementById("todayContent"),
+          weeklyContainer=document.getElementById("weeklyDomains"),
           monthlyContainer=document.getElementById("monthlyDomains"),
           settingsContainer=document.getElementById("settingsDomains"),
           insightsContainer=document.getElementById("insightsContent"),
@@ -505,6 +570,7 @@
           toastEl=document.getElementById("toast"),
           radarCanvas=document.getElementById("weeklyRadar"),
           views={
+            todayView:document.getElementById("todayView"),
             weeklyView:document.getElementById("weeklyView"),
             insightsView:document.getElementById("insightsView"),
             monthlyView:document.getElementById("monthlyView"),
@@ -524,6 +590,137 @@
       function updatePeriodLabel(){
         periodLabel.textContent="Week "+state.weekKey+" · Month "+state.monthKey+" · "+APP_VERSION;
       }
+
+      // --- TODAY RENDERING ---
+
+      function deriveNeglect(score){
+        if(score>=7) return "none";
+        if(score>=4) return "medium";
+        return "serious";
+      }
+
+      function renderToday(){
+        if(!todayContainer)return;
+        todayContainer.innerHTML="";
+
+        var wk = state.weeklyScores[state.weekKey] || {};
+        var domains = state.domains;
+        if(!domains.length) return;
+
+        var scores = domains.map(function(dom, idx){
+          var cur = typeof wk[idx]==="number" ? wk[idx] : 0;
+          return cur;
+        });
+
+        var total=0, count=0;
+        scores.forEach(function(v){total+=v;count++;});
+        var avg = count ? (total/count) : 0;
+        var avgDisplay = avg.toFixed(1);
+
+        var maxScore=-Infinity, minScore=Infinity;
+        var maxIdx=0, minIdx=0;
+        scores.forEach(function(v,idx){
+          if(v>maxScore){maxScore=v;maxIdx=idx;}
+          if(v<minScore){minScore=v;minIdx=idx;}
+        });
+
+        // Summary card
+        var summaryCard=document.createElement("div");
+        summaryCard.className="card";
+
+        var summaryHeader=document.createElement("div");
+        summaryHeader.className="card-header";
+
+        var summaryTitle=document.createElement("div");
+        summaryTitle.className="card-title";
+        summaryTitle.textContent="Today at a glance";
+
+        var summaryValue=document.createElement("div");
+        summaryValue.className="card-value";
+        summaryValue.textContent="Avg "+avgDisplay+"/10";
+
+        summaryHeader.appendChild(summaryTitle);
+        summaryHeader.appendChild(summaryValue);
+        summaryCard.appendChild(summaryHeader);
+
+        var summaryBody=document.createElement("div");
+        summaryBody.className="today-stack";
+
+        var bestLine=document.createElement("div");
+        bestLine.className="insights-secondary";
+        bestLine.textContent="Strongest: "+domains[maxIdx].name+" ("+maxScore+"/10)";
+
+        var worstLine=document.createElement("div");
+        worstLine.className="insights-secondary";
+        worstLine.textContent="Weakest: "+domains[minIdx].name+" ("+minScore+"/10)";
+
+        summaryBody.appendChild(bestLine);
+        summaryBody.appendChild(worstLine);
+        summaryCard.appendChild(summaryBody);
+
+        todayContainer.appendChild(summaryCard);
+
+        // Domain cards (simple list in one card)
+        var domainsCard=document.createElement("div");
+        domainsCard.className="card";
+
+        var domainsHeader=document.createElement("div");
+        domainsHeader.className="card-header";
+
+        var domainsTitle=document.createElement("div");
+        domainsTitle.className="card-title";
+        domainsTitle.textContent="Domains today";
+
+        domainsHeader.appendChild(domainsTitle);
+        domainsCard.appendChild(domainsHeader);
+
+        var domainsBody=document.createElement("div");
+        domainsBody.className="today-stack";
+
+        domains.forEach(function(dom,idx){
+          var score = scores[idx];
+          var neglect = deriveNeglect(score);
+
+          var row=document.createElement("div");
+          row.className="today-domain-row";
+
+          var label=document.createElement("div");
+          label.className="today-domain-label";
+          label.textContent=dom.name;
+
+          var right=document.createElement("div");
+          right.className="today-domain-score";
+
+          var scoreText=document.createElement("span");
+          scoreText.textContent=score+"/10";
+
+          var badge=document.createElement("span");
+          badge.className="badge-neglect";
+          if(neglect==="none"){
+            badge.classList.add("badge-none");
+            badge.textContent="no neglect";
+          }else if(neglect==="medium"){
+            badge.classList.add("badge-medium");
+            badge.textContent="medium neglect";
+          }else{
+            badge.classList.add("badge-serious");
+            badge.textContent="serious neglect";
+          }
+
+          right.appendChild(scoreText);
+          right.appendChild(badge);
+
+          row.appendChild(label);
+          row.appendChild(right);
+
+          domainsBody.appendChild(row);
+        });
+
+        domainsCard.appendChild(domainsBody);
+        todayContainer.appendChild(domainsCard);
+      }
+
+      // --- WEEKLY / MONTHLY / SETTINGS / INSIGHTS (mostly as before) ---
 
       function renderWeekly(){
         weeklyContainer.innerHTML="";
@@ -568,6 +765,7 @@
             saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);
             drawRadarFromState();
             renderInsights();
+            renderToday();
             showToast("Saved ✓");
           });
 
@@ -662,6 +860,7 @@
             renderMonthly();
             drawRadarFromState();
             renderInsights();
+            renderToday();
             showToast("Saved ✓");
           });
 
@@ -701,6 +900,7 @@
             renderWeekly();
             drawRadarFromState();
             renderInsights();
+            renderToday();
             showToast("Saved ✓");
           });
 
@@ -846,18 +1046,18 @@
           if(v>maxVal)v=maxVal;
           var rrVal=radius*(v/maxVal);
 
-          var segStart=base+step*k;
-          var segEnd=segStart+step;
+        var segStart=base+step*k;
+        var segEnd=segStart+step;
 
-          ctx.beginPath();
-          ctx.moveTo(cx,cy);
-          ctx.arc(cx,cy,rrVal,segStart,segEnd);
-          ctx.closePath();
-          ctx.fillStyle="rgba(93,168,255,0.23)";
-          ctx.fill();
-          ctx.strokeStyle="rgba(37,99,235,0.9)";
-          ctx.lineWidth=1;
-          ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,rrVal,segStart,segEnd);
+        ctx.closePath();
+        ctx.fillStyle="rgba(93,168,255,0.23)";
+        ctx.fill();
+        ctx.strokeStyle="rgba(37,99,235,0.9)";
+        ctx.lineWidth=1;
+        ctx.stroke();
         }
       }
 
@@ -1106,9 +1306,37 @@
         renderSettings();
         drawRadarFromState();
         renderInsights();
+        renderToday();
       }
 
       function onResize(){drawRadarFromState()}
+
+      function cleanupScores(){
+        Object.keys(state.weeklyScores).forEach(function(weekKey){
+          var wk=state.weeklyScores[weekKey];
+          var newW={};
+          state.domains.forEach(function(_,idx){
+            newW[idx]=typeof wk[idx]==="number"?wk[idx]:0;
+          });
+          state.weeklyScores[weekKey]=newW;
+        });
+
+        Object.keys(state.monthlyScores).forEach(function(monthKey){
+          var mk=state.monthlyScores[monthKey];
+          var newM={};
+          state.domains.forEach(function(dom,idx){
+            newM[idx]=newM[idx]||{};
+            dom.sub.forEach(function(_,sIdx){
+              if(!mk[idx])mk[idx]={};
+              newM[idx][sIdx]=typeof mk[idx][sIdx]==="number"?mk[idx][sIdx]:0;
+            });
+          });
+          state.monthlyScores[monthKey]=newM;
+        });
+
+        saveJSON(STORAGE_KEY_WEEKLY,state.weeklyScores);
+        saveJSON(STORAGE_KEY_MONTHLY,state.monthlyScores);
+      }
 
       initState();
       bindTabs();
@@ -1116,8 +1344,133 @@
       renderAll();
       window.addEventListener("resize",function(){
         clearTimeout(window.__lwResizeTimer);
-        window.__lwResizeTimer=setTimeout(onResize,180);
+        window.__lwResizeTimer=setTimeout(function(){
+          drawRadarFromState();
+        },180);
       });
+
+      function drawRadarFromState(){
+        if(!radarCanvas)return;
+        var wk=state.weeklyScores[state.weekKey]||{};
+        var labels=state.domains.map(function(d){return d.name});
+        var vals=state.domains.map(function(_,idx){
+          var v=wk[idx];
+          return typeof v==="number"?v:0;
+        });
+        drawRadar(radarCanvas,labels,vals);
+      }
+
+      function drawRadar(canvas,labels,values){
+        var n=labels.length;
+        if(!n)return;
+
+        var dpr=window.devicePixelRatio||1;
+        var rect=canvas.getBoundingClientRect();
+        var size=Math.min(rect.width||260,320)*0.7;
+        canvas.width=size*dpr;
+        canvas.height=size*dpr;
+
+        var ctx=canvas.getContext("2d");
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.clearRect(0,0,size,size);
+
+        var cx=size/2,cy=size/2;
+        var radius=size*0.42;
+        var maxVal=10;
+        var step=(Math.PI*2)/n;
+        var base=-Math.PI/2;
+
+        ctx.strokeStyle="#e5e7eb";
+        ctx.lineWidth=1;
+        var rings=4;
+        for(var r=1;r<=rings;r++){
+          ctx.beginPath();
+          var rr=radius*r/rings;
+          ctx.arc(cx,cy,rr,0,Math.PI*2);
+          ctx.stroke();
+        }
+
+        for(var i=0;i<n;i++){
+          var angle=base+step*i;
+          var x=cx+radius*Math.cos(angle);
+          var y=cy+radius*Math.sin(angle);
+          ctx.beginPath();
+          ctx.moveTo(cx,cy);
+          ctx.lineTo(x,y);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle="#1f2933";
+        ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
+        var labelRadius=radius*0.93;
+        var maxLabelWidth=radius*0.6;
+
+        for(var j=0;j<n;j++){
+          var startAng=base+step*j;
+          var centerAng=startAng+step/2;
+          var lx=cx+labelRadius*Math.cos(centerAng);
+          var ly=cy+labelRadius*Math.sin(centerAng);
+
+          var text=labels[j];
+          var lines=wrapTextLines(ctx,text,maxLabelWidth);
+          var lineHeight=10;
+
+          var ca=Math.cos(centerAng);
+          var align;
+          if(Math.abs(ca)<0.15){
+            align="center";
+          }else if(ca>0){
+            align="right";
+          }else{
+            align="left";
+          }
+          ctx.textAlign=align;
+
+          var baselineShift=(lines.length-1)*lineHeight/2;
+          for(var li=0;li<lines.length;li++){
+            var offsetY=-baselineShift+li*lineHeight;
+            ctx.textBaseline="middle";
+            ctx.fillText(lines[li],lx,ly+offsetY);
+          }
+        }
+
+        for(var k=0;k<n;k++){
+          var v=values[k];
+          if(v<=0)continue;
+          if(v>maxVal)v=maxVal;
+          var rrVal=radius*(v/maxVal);
+
+          var segStart=base+step*k;
+          var segEnd=segStart+step;
+
+          ctx.beginPath();
+          ctx.moveTo(cx,cy);
+          ctx.arc(cx,cy,rrVal,segStart,segEnd);
+          ctx.closePath();
+          ctx.fillStyle="rgba(93,168,255,0.23)";
+          ctx.fill();
+          ctx.strokeStyle="rgba(37,99,235,0.9)";
+          ctx.lineWidth=1;
+          ctx.stroke();
+        }
+      }
+
+      function wrapTextLines(ctx,text,maxWidth){
+        var words=text.split(" ");
+        var lines=[];
+        var current=words[0]||"";
+        for(var i=1;i<words.length;i++){
+          var test=current+" "+words[i];
+          if(ctx.measureText(test).width<=maxWidth){
+            current=test;
+          }else{
+            lines.push(current);
+            current=words[i];
+          }
+        }
+        lines.push(current);
+        return lines;
+      }
     })();
   </script>
 </body>
