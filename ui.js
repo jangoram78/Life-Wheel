@@ -1,6 +1,7 @@
 // ui.js
 (function(window){
   "use strict";
+
   // Compatibility alias: support either LWEngine or LWengine from engine.js
   if (!window.LWEngine && window.LWengine) {
     window.LWEngine = window.LWengine;
@@ -9,9 +10,10 @@
     console.error("Life Wheel engine not found (expected LWEngine or LWengine).");
   }
 
+  // ---- DOM refs ----
   var todayContainer,
-      settingsContainer,
       insightsContainer,
+      settingsContainer,
       tasksDomainSelect,
       taskTemplatesContainer,
       periodLabel,
@@ -19,16 +21,10 @@
       radarCanvas,
       views;
 
-  // Log view refs
-  var logDomainSelect,
-      logSubdomainSelect,
-      logDifficultySelect,
-      logLabelInput,
-      logAddButton;
-
   var selectedTasksDomainIdx = 0;
   var toastTimer = null;
 
+  // ----- Toast -----
   function showToast(msg){
     toastEl.textContent = msg || "Saved ✓";
     if(toastTimer){ clearTimeout(toastTimer); toastTimer=null; }
@@ -38,31 +34,26 @@
     },900);
   }
 
+  // ----- Init DOM refs -----
   function initDomRefs(){
-    todayContainer = document.getElementById("todayContent");
-    settingsContainer = document.getElementById("settingsDomains");
-    insightsContainer = document.getElementById("insightsContent");
-    tasksDomainSelect = document.getElementById("tasksDomainSelect");
+    todayContainer         = document.getElementById("todayContent");
+    insightsContainer      = document.getElementById("insightsContent");
+    settingsContainer      = document.getElementById("settingsDomains");
+    tasksDomainSelect      = document.getElementById("tasksDomainSelect");
     taskTemplatesContainer = document.getElementById("taskTemplatesContainer");
-    periodLabel = document.getElementById("periodLabel");
-    toastEl = document.getElementById("toast");
-    radarCanvas = document.getElementById("weeklyRadar");
-
-    // Log view
-    logDomainSelect = document.getElementById("logDomainSelect");
-    logSubdomainSelect = document.getElementById("logSubdomainSelect");
-    logDifficultySelect = document.getElementById("logDifficultySelect");
-    logLabelInput = document.getElementById("logLabelInput");
-    logAddButton = document.getElementById("logAddButton");
+    periodLabel            = document.getElementById("periodLabel");
+    toastEl                = document.getElementById("toast");
+    radarCanvas            = document.getElementById("weeklyRadar");
 
     views = {
-      todayView: document.getElementById("todayView"),
+      todayView:    document.getElementById("todayView"),
       insightsView: document.getElementById("insightsView"),
-      settingsView: document.getElementById("settingsView"),
-      logView: document.getElementById("logView")
+      logView:      document.getElementById("logView"),
+      settingsView: document.getElementById("settingsView")
     };
   }
 
+  // ----- Tabs -----
   function bindTabs(){
     var buttons=document.querySelectorAll(".tab-btn");
     buttons.forEach(function(btn){
@@ -70,7 +61,9 @@
         var target=btn.getAttribute("data-view");
         if(!views[target])return;
         Object.keys(views).forEach(function(k){
-          views[k].classList.remove("active");
+          if(views[k]){
+            views[k].classList.remove("active");
+          }
         });
         views[target].classList.add("active");
         buttons.forEach(function(b){b.classList.remove("active")});
@@ -79,12 +72,13 @@
     });
   }
 
+  // ----- Period label -----
   function updatePeriodLabel(){
     var info = window.LWEngine.getPeriodInfo();
     periodLabel.textContent = "Week "+info.weekKey+" · Month "+info.monthKey+" · "+info.appVersion;
   }
 
-  // ----- Radar drawing (unchanged logic) -----
+  // ----- Radar drawing -----
   function wrapTextLines(ctx,text,maxWidth){
     var words=text.split(" ");
     var lines=[];
@@ -126,6 +120,7 @@
     var step=(Math.PI*2)/n;
     var base=-Math.PI/2;
 
+    // rings
     ctx.strokeStyle="#e5e7eb";
     ctx.lineWidth=1;
     var rings=4;
@@ -137,6 +132,7 @@
       ctx.stroke();
     }
 
+    // spokes
     for(i=0;i<n;i++){
       var angle=base+step*i;
       var x=cx+radius*Math.cos(angle);
@@ -147,6 +143,7 @@
       ctx.stroke();
     }
 
+    // labels
     ctx.fillStyle="#1f2933";
     ctx.font="9px -apple-system,BlinkMacSystemFont,system-ui";
     var labelRadius=radius*0.93;
@@ -181,6 +178,7 @@
       }
     }
 
+    // arcs per domain
     for(var k=0;k<n;k++){
       var v=values[k];
       if(v<=0)continue;
@@ -208,10 +206,13 @@
     todayContainer.innerHTML = "";
 
     var vm = window.LWEngine.getTodayVM();
-    var domains = window.LWEngine.getDomains();
-    if(!domains.length) return;
 
-    // Coach nudge card (kept)
+    // We assume the radar card is already in the HTML above this container.
+    // So here we only render:
+    //  1) Coach nudge
+    //  2) Today’s tasks
+
+    // Nudge card
     if(vm.nudge){
       var nudgeCard=document.createElement("div");
       nudgeCard.className="card";
@@ -383,19 +384,12 @@
     todayContainer.appendChild(card);
   }
 
-  // ----- MONTHLY VIEW (engine support – UI currently not exposed) -----
-  function renderMonthly(){
-    // Safely no-op if there is no monthly container (we removed that view)
-    return;
-  }
-
   // ----- INSIGHTS VIEW -----
   function renderInsights(){
     if(!insightsContainer) return;
     insightsContainer.innerHTML="";
 
     var vm = window.LWEngine.getInsightsVM();
-    var domains = window.LWEngine.getDomains();
 
     // Summary card
     var summaryCard=document.createElement("div");
@@ -539,56 +533,9 @@
 
     focusCard.appendChild(focusBody);
     insightsContainer.appendChild(focusCard);
-
-    // NEW: Suggested actions for the focus domain
-    if(vm.focusIdx!==null && domains[vm.focusIdx]){
-      var actionsCard=document.createElement("div");
-      actionsCard.className="card";
-
-      var aHead=document.createElement("div");
-      aHead.className="card-header";
-
-      var aTitle=document.createElement("div");
-      aTitle.className="card-title";
-      aTitle.textContent="Suggested actions";
-
-      aHead.appendChild(aTitle);
-      actionsCard.appendChild(aHead);
-
-      var aBody=document.createElement("div");
-      aBody.className="insights-stack";
-
-      // Pull micro tasks from templates for the focus domain
-      var templates = window.LWEngine.getTaskTemplatesForDomain(vm.focusIdx);
-      var suggestions = [];
-
-      templates.forEach(function(t){
-        (t.micro || []).forEach(function(label){
-          suggestions.push(domains[vm.focusIdx].name+" — "+t.subName+": "+label);
-        });
-      });
-
-      if(suggestions.length===0){
-        var msg2=document.createElement("div");
-        msg2.className="insights-secondary";
-        msg2.textContent="Add some micro tasks for this domain in Setup → My task library to see concrete suggestions here.";
-        aBody.appendChild(msg2);
-      }else{
-        // show up to 3
-        suggestions.slice(0,3).forEach(function(text){
-          var row=document.createElement("div");
-          row.className="insights-secondary";
-          row.textContent="• "+text;
-          aBody.appendChild(row);
-        });
-      }
-
-      actionsCard.appendChild(aBody);
-      insightsContainer.appendChild(actionsCard);
-    }
   }
 
-  // ----- SETTINGS VIEW -----
+  // ----- SETTINGS (domains) -----
   function renderSettings(){
     if(!settingsContainer)return;
     settingsContainer.innerHTML="";
@@ -632,7 +579,6 @@
         var parts=raw.split(",").map(function(s){return s.trim()}).filter(Boolean);
         if(!parts.length) parts=["Aspect 1","Aspect 2","Aspect 3"];
         window.LWEngine.updateDomainSubdomains(idx,parts).then(function(){
-          renderMonthly();
           drawRadar();
           renderInsights();
           renderToday();
@@ -647,7 +593,7 @@
     });
   }
 
-  // ----- MY TASKS VIEW (inside Setup) -----
+  // ----- MY TASKS (templates) within Settings -----
   function renderTaskTemplatesView(){
     if(!tasksDomainSelect || !taskTemplatesContainer) return;
 
@@ -715,7 +661,7 @@
 
       addArea("Micro (5–10 mins)","micro",t.micro);
       addArea("Standard (15–20 mins)","standard",t.standard);
-      addArea("Deep (20–30 mins)","deep",t.deep);
+      addArea("Deep (20–30+ mins)","deep",t.deep);
 
       body.appendChild(subCard);
     });
@@ -734,85 +680,183 @@
     });
   }
 
-  // ----- LOG VIEW -----
-  function populateLogDomainSelect(){
-    if(!logDomainSelect || !logSubdomainSelect) return;
-    var domains = window.LWEngine.getDomains();
-    logDomainSelect.innerHTML = "";
-    domains.forEach(function(dom, idx){
-      var opt=document.createElement("option");
-      opt.value=String(idx);
-      opt.textContent=dom.name;
-      logDomainSelect.appendChild(opt);
-    });
+  // ----- LOG VIEW (Quick log + manual log) -----
 
-    // Default to 0
-    logDomainSelect.value = "0";
-    populateLogSubdomains();
-  }
+  // Quick-log buttons: your three everyday activities
+  function renderQuickLogSection(parentEl){
+    var card = document.createElement("div");
+    card.className = "card";
 
-  function populateLogSubdomains(){
-    if(!logDomainSelect || !logSubdomainSelect) return;
-    var domains = window.LWEngine.getDomains();
-    var dIdx = parseInt(logDomainSelect.value,10);
-    if(isNaN(dIdx) || !domains[dIdx]){
-      logSubdomainSelect.innerHTML = "";
-      return;
-    }
-    var dom = domains[dIdx];
-    logSubdomainSelect.innerHTML = "";
-    dom.sub.forEach(function(subName, sIdx){
-      var opt=document.createElement("option");
-      opt.value=String(sIdx);
-      opt.textContent=subName;
-      logSubdomainSelect.appendChild(opt);
-    });
-  }
+    var head = document.createElement("div");
+    head.className = "card-header";
 
-  function bindLogControls(){
-    if(!logDomainSelect || !logSubdomainSelect || !logDifficultySelect || !logLabelInput || !logAddButton) return;
+    var title = document.createElement("div");
+    title.className = "card-title";
+    title.textContent = "Daily quick log";
 
-    populateLogDomainSelect();
+    head.appendChild(title);
+    card.appendChild(head);
 
-    logDomainSelect.addEventListener("change", function(){
-      populateLogSubdomains();
-    });
+    var body = document.createElement("div");
+    body.className = "today-stack";
 
-    logAddButton.addEventListener("click", async function(){
-      var dIdx = parseInt(logDomainSelect.value,10);
-      var sIdx = parseInt(logSubdomainSelect.value,10);
-      var difficulty = logDifficultySelect.value || "micro";
-      var label = (logLabelInput.value || "").trim();
+    // Helper to build one button wired to a specific domain/subdomain/difficulty
+    function addQuickButton(label, domainName, subName, difficulty){
+      var btn = document.createElement("button");
+      btn.className = "btn outline";
+      btn.style.fontSize = "11px";
+      btn.style.padding = "4px 8px";
+      btn.textContent = label;
 
-      if(isNaN(dIdx) || isNaN(sIdx)){
-        showToast("Select domain & subdomain first");
-        return;
-      }
-      if(!label){
-        showToast("Add a short description");
-        return;
-      }
+      btn.addEventListener("click", async function(){
+        var domains = window.LWEngine.getDomains();
+        var dIdx = domains.findIndex(d => d.name === domainName);
+        if(dIdx === -1){
+          alert("Domain '"+domainName+"' not found – check names in app settings.");
+          return;
+        }
+        var sIdx = domains[dIdx].sub.indexOf(subName);
+        if(sIdx === -1){
+          alert("Subdomain '"+subName+"' not found under '"+domainName+"'.");
+          return;
+        }
 
-      if(typeof window.LWEngine.addLoggedTaskToToday === "function"){
         await window.LWEngine.addLoggedTaskToToday(dIdx, sIdx, difficulty, label);
-        logLabelInput.value = "";
-        renderAll();
         showToast("Logged ✓");
-      }else{
-        console.warn("addLoggedTaskToToday not available on LWEngine");
-        showToast("Engine missing logging function");
-      }
+        renderAll();
+      });
+
+      body.appendChild(btn);
+    }
+
+    // Your three specific daily quick-log tasks:
+    addQuickButton(
+      "Take all vitamins",
+      "Physical",
+      "Health",
+      "standard"
+    );
+
+    addQuickButton(
+      "Drink glass of ACV first thing",
+      "Physical",
+      "Health",
+      "micro"
+    );
+
+    addQuickButton(
+      "Morning Ten Minute Workout",
+      "Physical",
+      "Strength",
+      "standard"
+    );
+
+    card.appendChild(body);
+    parentEl.appendChild(card);
+  }
+
+  function renderLogView(){
+    var logContainer = document.getElementById("logContent");
+    if (!logContainer) return;
+    logContainer.innerHTML = "";
+
+    // Quick-log section
+    var quickSection = document.createElement("div");
+    quickSection.className = "section";
+    renderQuickLogSection(quickSection);
+    logContainer.appendChild(quickSection);
+
+    // Manual log section
+    var formSection = document.createElement("div");
+    formSection.className = "section";
+
+    var domains = window.LWEngine.getDomains();
+
+    // Domain select
+    var domSelect = document.createElement("select");
+    domSelect.id = "logDomainSelect";
+    domains.forEach(function(d, idx){
+      var opt = document.createElement("option");
+      opt.value = idx;
+      opt.textContent = d.name;
+      domSelect.appendChild(opt);
     });
+    formSection.appendChild(domSelect);
+
+    // Subdomain select
+    var subSelect = document.createElement("select");
+    subSelect.id = "logSubSelect";
+    formSection.appendChild(subSelect);
+
+    // Difficulty select
+    var diffSelect = document.createElement("select");
+    diffSelect.id = "logDiffSelect";
+    ["micro","standard","deep"].forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      diffSelect.appendChild(opt);
+    });
+    formSection.appendChild(diffSelect);
+
+    // Text input
+    var textInput = document.createElement("input");
+    textInput.id = "logTextInput";
+    textInput.placeholder = "Describe what you did";
+    formSection.appendChild(textInput);
+
+    // Button
+    var btn = document.createElement("button");
+    btn.className = "btn outline";
+    btn.textContent = "Add to Today";
+
+    btn.addEventListener("click", async function(){
+      var dIdx = parseInt(domSelect.value, 10);
+      var sIdx = parseInt(subSelect.value, 10);
+      var diff = diffSelect.value;
+      var label = textInput.value.trim();
+
+      if (!label) {
+        alert("Please enter a description.");
+        return;
+      }
+
+      await window.LWEngine.addLoggedTaskToToday(dIdx, sIdx, diff, label);
+      textInput.value = "";
+
+      showToast("Logged ✓");
+      renderAll();
+    });
+
+    formSection.appendChild(btn);
+    logContainer.appendChild(formSection);
+
+    // Populate subdomains initially
+    function refreshSubdomains() {
+      subSelect.innerHTML = "";
+      var dIdx = parseInt(domSelect.value, 10);
+      var dom = domains[dIdx];
+      if (!dom) return;
+      dom.sub.forEach(function(s, idx){
+        var opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = s;
+        subSelect.appendChild(opt);
+      });
+    }
+
+    domSelect.addEventListener("change", refreshSubdomains);
+    refreshSubdomains();
   }
 
   // ----- Top-level render -----
   function renderAll(){
     updatePeriodLabel();
-    renderMonthly();       // currently a no-op
-    renderSettings();
-    renderTaskTemplatesView();
     drawRadar();
     renderInsights();
+    renderSettings();
+    renderTaskTemplatesView();
+    renderLogView();
     renderToday();
   }
 
@@ -821,12 +865,9 @@
     initDomRefs();
     bindTabs();
     bindTasksDomainSelect();
-    bindLogControls();
 
-    // Initial render
     renderAll();
 
-    // Resize handler for radar
     window.addEventListener("resize",function(){
       clearTimeout(window.__lwResizeTimer);
       window.__lwResizeTimer=setTimeout(function(){
@@ -836,7 +877,7 @@
   }
 
   document.addEventListener("DOMContentLoaded",function(){
-    // First init engine (async), then UI
+    console.log("LWEngine at DOMContentLoaded:", window.LWEngine);
     window.LWEngine.init().then(function(){
       initUI();
     });
