@@ -21,10 +21,11 @@
       </div>
     </div>
 
-    <!-- INSIGHTS VIEW (weekly + monthly + insights all in one) -->
+    <!-- INSIGHTS VIEW (weekly + monthly + insights all together) -->
     <div id="insightsView" class="view">
-      <!-- Weekly radar -->
+      <!-- Weekly radar + sliders -->
       <div class="section">
+        <div class="section-title">Weekly overview</div>
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
             <canvas id="weeklyRadar"></canvas>
@@ -32,35 +33,47 @@
         </div>
       </div>
 
-      <!-- Weekly scores -->
       <div class="section">
         <div class="section-title">Weekly scores</div>
         <div id="weeklyDomains"></div>
       </div>
 
-      <!-- Weekly insights -->
+      <!-- Weekly insights card stack -->
       <div class="section">
         <div class="section-title">Weekly insights</div>
         <div id="insightsContent"></div>
       </div>
 
-      <!-- Monthly subdomain scores -->
+      <!-- Monthly sliders -->
       <div class="section">
         <div class="section-title">Monthly subdomain scores</div>
         <div id="monthlyDomains"></div>
       </div>
     </div>
 
-    <!-- SETTINGS VIEW (domains + info + my task library) -->
+    <!-- SETTINGS VIEW (domains + task library + info) -->
     <div id="settingsView" class="view">
-      <!-- Domains & subdomains -->
+      <!-- Domains / structure -->
       <div class="section">
-        <div class="section-title">Domains</div>
+        <div class="section-title">Domains & structure</div>
         <div class="settings-hint">
           Domain list is seeded from your Life Wheel model.
           (You can rename domains/subdomains here; structure is kept in sync.)
         </div>
         <div id="settingsDomains"></div>
+      </div>
+
+      <!-- My task library (per-domain templates) -->
+      <div class="section">
+        <div class="section-title">My task library</div>
+        <div class="small-note">
+          Define your own micro / standard / deep tasks for each subdomain. One task per line.
+          The app will use these first when generating daily tasks.
+        </div>
+        <div class="settings-row" style="margin-top:4px;">
+          <select id="tasksDomainSelect"></select>
+        </div>
+        <div id="taskTemplatesContainer"></div>
       </div>
 
       <!-- Info -->
@@ -73,25 +86,12 @@
           </div>
         </div>
       </div>
-
-      <!-- My task library (moved in from old My tasks tab) -->
-      <div class="section">
-        <div class="section-title">My task library</div>
-        <div class="small-note">
-          Define your own micro / standard / deep tasks for each subdomain. One task per line.
-          The app will use these first when generating daily tasks.
-        </div>
-        <div class="settings-row" style="margin-top:4px;">
-          <select id="tasksDomainSelect"></select>
-        </div>
-        <div id="taskTemplatesContainer"></div>
-      </div>
     </div>
   </div>
 
   <div id="toast" class="toast">Saved ✓</div>
 
-  <!-- TAB BAR: simplified to Today / Insights / Settings -->
+  <!-- 3-tab bar -->
   <div class="tabbar">
     <div class="tabbar-inner">
       <button class="tab-btn active" data-view="todayView">
