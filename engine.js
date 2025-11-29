@@ -4,10 +4,37 @@
 
   var APP_VERSION = "U14-Engine";
 
-  // ---- localForage config (with safe fallback) ----
+  // ---- Storage config: localforage → localStorage shim → in-memory ----
   var lf = window.localforage;
+
+  if (!lf && window.localStorage) {
+    console.warn("[LifeWheel] localforage not found – using localStorage shim (persistent).");
+    lf = {
+      _prefix: "LifeWheelApp_",
+      config: function(){},
+      getItem: function(key){
+        try {
+          var raw = window.localStorage.getItem(this._prefix + key);
+          if (!raw) return Promise.resolve(null);
+          return Promise.resolve(JSON.parse(raw));
+        } catch (e) {
+          console.error("[LifeWheel] localStorage getItem error", e);
+          return Promise.resolve(null);
+        }
+      },
+      setItem: function(key, value){
+        try {
+          window.localStorage.setItem(this._prefix + key, JSON.stringify(value));
+        } catch (e) {
+          console.error("[LifeWheel] localStorage setItem error", e);
+        }
+        return Promise.resolve(value);
+      }
+    };
+  }
+
   if (!lf) {
-    console.warn("[LifeWheel] localforage not found – using in-memory fallback (no persistence).");
+    console.warn("[LifeWheel] localforage & localStorage not found – using in-memory fallback (no persistence).");
     lf = {
       _data: {},
       config: function(){},
@@ -26,22 +53,20 @@
     storeName: "lifewheel_state"
   });
 
-  // Alias back to the name used elsewhere in this file
   var localforage = lf;
-
   var STATE_KEY = "userState_v2";
 
-  // ----- Domain model (Option A, definitive) -----
+  // ----- Domain model -----
   var defaultDomains = [
     { name:"Mental",          sub:["Logic","Knowledge","Skill"] },
     { name:"Physical",        sub:["Strength","Stamina","Health","Mobility"] },
     { name:"Work & Purpose",  sub:["Career","Mastery","Finance","Legacy"] },
     { name:"Social",          sub:["Family","Friends","Colleagues","Civic Contribution"] },
-    { name:"Emotional",       sub:["Emotional","Joy","Identity"] },
+    { name:"Emotional",       sub:["Emotional Stability & Regulation","Joy","Identity"] },
     { name:"Spiritual",       sub:["Philosophy","Virtue"] }
   ];
 
-  // ----- Helpers for date keys -----
+  // ----- Date helpers -----
   function getTodayKey(){
     var d=new Date();
     var y=d.getFullYear();
@@ -111,7 +136,7 @@
     return m;
   }
 
-  // ----- Unified state structure -----
+  // ----- Unified state -----
   var userState = null;
 
   function buildDefaultState(){
@@ -144,8 +169,9 @@
     };
 
     var templates = {}; // domainIdx -> subIdx -> {micro,standard,deep}
+    var manual = {};    // dateKey -> [manual logged activities]
 
-    var manualActivities = {}; // dateKey -> [manual activity objects]
+    manual[todayKey] = [];
 
     return {
       version: 1,
@@ -158,7 +184,7 @@
       monthlyScores: monthlyScores,
       tasks: tasks,
       templates: templates,
-      manualActivities: manualActivities
+      manual: manual
     };
   }
 
@@ -171,7 +197,6 @@
     userState.weekKey  = weekKey;
     userState.monthKey = monthKey;
 
-    // Make sure the containers exist
     if (!userState.weeklyScores || typeof userState.weeklyScores !== "object") {
       userState.weeklyScores = {};
     }
@@ -184,8 +209,8 @@
     if (!userState.templates || typeof userState.templates !== "object") {
       userState.templates = {};
     }
-    if (!userState.manualActivities || typeof userState.manualActivities !== "object") {
-      userState.manualActivities = {};
+    if (!userState.manual || typeof userState.manual !== "object") {
+      userState.manual = {};
     }
 
     // Ensure weekly frame
@@ -226,9 +251,9 @@
       if (!Array.isArray(pack.done))    pack.done = [];
     }
 
-    // Ensure manualActivities slot for today
-    if (!Array.isArray(userState.manualActivities[todayKey])) {
-      userState.manualActivities[todayKey] = [];
+    // Ensure manual slot for today
+    if (!Array.isArray(userState.manual[todayKey])) {
+      userState.manual[todayKey] = [];
     }
   }
 
@@ -328,7 +353,6 @@
   }
 
   // ----- Task generation -----
-
   function generateBaseTaskPack(){
     var todayKey = userState.todayKey;
     var wk = userState.weeklyScores[userState.weekKey] || {};
@@ -460,7 +484,6 @@
     var newPack = generateBaseTaskPack();
     // IMPORTANT: keep done list; just replace pending
     pack.pending = newPack.pending;
-    // pack.done is left as-is
   }
 
   function generateTaskForDomainAndDifficulty(domainIdx, difficulty){
@@ -528,78 +551,72 @@
     userState.weeklyScores[weekKey][idx] = updated;
   }
 
-  // ----- Manual activities -----
-
+  // ----- Manual activity logging -----
   async function addManualActivity(domainIdx, subIdx, difficulty, label){
     ensureCurrentFrames();
     var todayKey = userState.todayKey;
-    if(!userState.manualActivities || typeof userState.manualActivities !== "object"){
-      userState.manualActivities = {};
+    if(!userState.manual || typeof userState.manual !== "object"){
+      userState.manual = {};
     }
-    if(!Array.isArray(userState.manualActivities[todayKey])){
-      userState.manualActivities[todayKey] = [];
+    if(!Array.isArray(userState.manual[todayKey])){
+      userState.manual[todayKey] = [];
     }
 
-    var diff = (difficulty==="standard" || difficulty==="deep") ? difficulty : "micro";
-    var duration = 10, energy = 3;
-    if(diff === "standard"){ duration = 20; energy = 5; }
-    else if(diff === "deep"){ duration = 25; energy = 7; }
-
-    var nowIso = new Date().toISOString();
-    var id = todayKey+"-manual-"+Date.now()+"-"+Math.floor(Math.random()*1000);
+    var energy, duration;
+    if(difficulty === "standard"){
+      energy = 5; duration = 20;
+    }else if(difficulty === "deep"){
+      energy = 7; duration = 25;
+    }else{
+      difficulty = "micro";
+      energy = 3; duration = 10;
+    }
 
     var entry = {
-      id: id,
-      domainIdx: (typeof domainIdx==="number" ? domainIdx : null),
-      subdomainIdx: (typeof subIdx==="number" ? subIdx : null),
-      difficulty: diff,
-      label: label || "Manual activity",
+      id: todayKey + "-manual-" + Date.now() + "-" + Math.floor(Math.random()*100000),
+      domainIdx: (typeof domainIdx === "number" ? domainIdx : null),
+      subdomainIdx: (typeof subIdx === "number" ? subIdx : null),
+      difficulty: difficulty,
+      label: label,
       energyCost: energy,
       expectedDuration: duration,
-      state: "done",        // already done when logged
-      createdAt: nowIso,
-      loggedAt: nowIso,
-      kind: "manual"
+      state: "done",
+      createdAt: new Date().toISOString()
     };
 
-    // Apply the same impact as if you'd completed a generated task
+    userState.manual[todayKey].push(entry);
+
+    // Apply impact to weekly score
     applyTaskCompletionImpact(entry);
 
-    userState.manualActivities[todayKey].push(entry);
     await saveState();
-    return entry;
   }
 
   function getManualTodayActivities(){
     ensureCurrentFrames();
     var todayKey = userState.todayKey;
-    if(!userState.manualActivities || !Array.isArray(userState.manualActivities[todayKey])){
-      return [];
-    }
-    return userState.manualActivities[todayKey].slice(0);
+    var list = userState.manual && userState.manual[todayKey];
+    if(!Array.isArray(list)) return [];
+    return list.slice(0);
   }
 
   // ----- Persistence -----
-
   function saveState(){
     return localforage.setItem(STATE_KEY,userState);
   }
 
-  // ----- Public API -----
-
+  // ----- Public-facing view models -----
   async function init(){
     var stored = await localforage.getItem(STATE_KEY);
 
     if (stored && typeof stored === "object") {
       userState = stored;
 
-      // --- Migration / safety guards ---
       if (!userState.domains || !Array.isArray(userState.domains) || !userState.domains.length) {
         userState.domains = defaultDomains.map(function(d){
           return { name: d.name, sub: d.sub.slice(0) };
         });
       }
-
       if (!userState.weeklyScores || typeof userState.weeklyScores !== "object") {
         userState.weeklyScores = {};
       }
@@ -612,15 +629,15 @@
       if (!userState.templates || typeof userState.templates !== "object") {
         userState.templates = {};
       }
-      if (!userState.manualActivities || typeof userState.manualActivities !== "object") {
-        userState.manualActivities = {};
+      if (!userState.manual || typeof userState.manual !== "object") {
+        userState.manual = {};
       }
 
+      userState.appVersion = APP_VERSION;
     } else {
       userState = buildDefaultState();
     }
 
-    // Ensure frames & today's tasks
     ensureCurrentFrames();
     ensureTasksForToday(false);
     await saveState();
@@ -691,11 +708,7 @@
     if(!Array.isArray(pack.pending)) pack.pending=[];
     if(!Array.isArray(pack.done))    pack.done=[];
 
-    var manual = [];
-    if(userState.manualActivities &&
-       Array.isArray(userState.manualActivities[todayKey])){
-      manual = userState.manualActivities[todayKey].slice(0);
-    }
+    var manualToday = getManualTodayActivities();
 
     return {
       avgScore: avg,
@@ -708,7 +721,7 @@
         pending: pack.pending.slice(0),
         done: pack.done.slice(0)
       },
-      manual: manual,
+      manual: manualToday,
       prevWeekKey: prevKey
     };
   }
@@ -760,13 +773,13 @@
 
     var focusIdx = null;
     if(deltas.length){
-      var minScoreVal = Infinity;
+      var minScore2 = Infinity;
       var candidates = [];
       for(i=0;i<deltas.length;i++){
-        if(deltas[i].cur < minScoreVal){
-          minScoreVal = deltas[i].cur;
+        if(deltas[i].cur < minScore2){
+          minScore2 = deltas[i].cur;
           candidates = [i];
-        }else if(deltas[i].cur === minScoreVal){
+        }else if(deltas[i].cur === minScore2){
           candidates.push(i);
         }
       }
@@ -828,7 +841,7 @@
 
   async function regenerateTodayTasks(){
     ensureCurrentFrames();
-    ensureTasksForToday(true); // regenerate pending, keep done
+    ensureTasksForToday(true); // regenerate pending, keep done & manual
     await saveState();
   }
 
@@ -852,7 +865,6 @@
       }
     }
     if(!found){
-      // Already done or not found
       return;
     }
 
@@ -906,7 +918,6 @@
     if(!userState.domains[domainIdx]) return;
     if(!newSubs || !newSubs.length) return;
     userState.domains[domainIdx].sub = newSubs.slice(0);
-    // Ensure monthly scores + templates consistent
     var monthKey = userState.monthKey;
     if(!userState.monthlyScores[monthKey][domainIdx]){
       userState.monthlyScores[monthKey][domainIdx] = {};
@@ -920,7 +931,6 @@
     await saveState();
   }
 
-  // Radar helper
   function getRadarData(){
     var wk = userState.weeklyScores[userState.weekKey] || {};
     var labels = [];
@@ -943,7 +953,7 @@
       : [];
   }
 
-  // Public
+  // Public API
   window.LWEngine = {
     init: init,
     getState: getState,
@@ -962,7 +972,6 @@
     updateDomainName: updateDomainName,
     updateDomainSubdomains: updateDomainSubdomains,
     getRadarData: getRadarData,
-    // new:
     addManualActivity: addManualActivity,
     getManualTodayActivities: getManualTodayActivities
   };
