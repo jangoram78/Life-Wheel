@@ -21,8 +21,9 @@
       </div>
     </div>
 
-    <!-- WEEKLY VIEW -->
-    <div id="weeklyView" class="view">
+    <!-- INSIGHTS VIEW (weekly + monthly + insights all in one) -->
+    <div id="insightsView" class="view">
+      <!-- Weekly radar -->
       <div class="section">
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
@@ -30,30 +31,29 @@
           </div>
         </div>
       </div>
+
+      <!-- Weekly scores -->
       <div class="section">
         <div class="section-title">Weekly scores</div>
         <div id="weeklyDomains"></div>
       </div>
-    </div>
 
-    <!-- INSIGHTS VIEW -->
-    <div id="insightsView" class="view">
+      <!-- Weekly insights -->
       <div class="section">
         <div class="section-title">Weekly insights</div>
         <div id="insightsContent"></div>
       </div>
-    </div>
 
-    <!-- MONTHLY VIEW -->
-    <div id="monthlyView" class="view">
+      <!-- Monthly subdomain scores -->
       <div class="section">
         <div class="section-title">Monthly subdomain scores</div>
         <div id="monthlyDomains"></div>
       </div>
     </div>
 
-    <!-- SETTINGS VIEW -->
+    <!-- SETTINGS VIEW (domains + info + my task library) -->
     <div id="settingsView" class="view">
+      <!-- Domains & subdomains -->
       <div class="section">
         <div class="section-title">Domains</div>
         <div class="settings-hint">
@@ -62,6 +62,8 @@
         </div>
         <div id="settingsDomains"></div>
       </div>
+
+      <!-- Info -->
       <div class="section">
         <div class="section-title">Info</div>
         <div class="card">
@@ -71,10 +73,8 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- MY TASKS VIEW -->
-    <div id="tasksView" class="view">
+      <!-- My task library (moved in from old My tasks tab) -->
       <div class="section">
         <div class="section-title">My task library</div>
         <div class="small-note">
@@ -91,6 +91,7 @@
 
   <div id="toast" class="toast">Saved ✓</div>
 
+  <!-- TAB BAR: simplified to Today / Insights / Settings -->
   <div class="tabbar">
     <div class="tabbar-inner">
       <button class="tab-btn active" data-view="todayView">
@@ -99,34 +100,16 @@
           <div class="tab-label">Today</div>
         </div>
       </button>
-      <button class="tab-btn" data-view="weeklyView">
-        <div class="tab-pill">
-          <div class="tab-icon">🗓️</div>
-          <div class="tab-label">Weekly</div>
-        </div>
-      </button>
       <button class="tab-btn" data-view="insightsView">
         <div class="tab-pill">
           <div class="tab-icon">📘</div>
           <div class="tab-label">Insights</div>
         </div>
       </button>
-      <button class="tab-btn" data-view="monthlyView">
-        <div class="tab-pill">
-          <div class="tab-icon">📊</div>
-          <div class="tab-label">Monthly</div>
-        </div>
-      </button>
       <button class="tab-btn" data-view="settingsView">
         <div class="tab-pill">
           <div class="tab-icon">⚙️</div>
           <div class="tab-label">Settings</div>
-        </div>
-      </button>
-      <button class="tab-btn" data-view="tasksView">
-        <div class="tab-pill">
-          <div class="tab-icon">✅</div>
-          <div class="tab-label">My tasks</div>
         </div>
       </button>
     </div>
