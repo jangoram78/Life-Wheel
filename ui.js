@@ -1,6 +1,7 @@
 // ui.js
 (function(window){
   "use strict";
+
   // Compatibility alias: support either LWEngine or LWengine from engine.js
   if (!window.LWEngine && window.LWengine) {
     window.LWEngine = window.LWengine;
@@ -14,12 +15,12 @@
       monthlyContainer,
       settingsContainer,
       insightsContainer,
-      logContainer,
       tasksDomainSelect,
       taskTemplatesContainer,
       periodLabel,
       toastEl,
       radarCanvas,
+      logContainer,
       views;
 
   var selectedTasksDomainIdx = 0;
@@ -35,25 +36,26 @@
   }
 
   function initDomRefs(){
-    todayContainer = document.getElementById("todayContent");
-    weeklyContainer = document.getElementById("weeklyDomains");
-    monthlyContainer = document.getElementById("monthlyDomains");
-    settingsContainer = document.getElementById("settingsDomains");
-    insightsContainer = document.getElementById("insightsContent");
-    logContainer = document.getElementById("logContent");
-    tasksDomainSelect = document.getElementById("tasksDomainSelect");
+    todayContainer       = document.getElementById("todayContent");
+    weeklyContainer      = document.getElementById("weeklyDomains");
+    monthlyContainer     = document.getElementById("monthlyDomains");
+    settingsContainer    = document.getElementById("settingsDomains");
+    insightsContainer    = document.getElementById("insightsContent");
+    tasksDomainSelect    = document.getElementById("tasksDomainSelect");
     taskTemplatesContainer = document.getElementById("taskTemplatesContainer");
-    periodLabel = document.getElementById("periodLabel");
-    toastEl = document.getElementById("toast");
-    radarCanvas = document.getElementById("weeklyRadar");
+    periodLabel          = document.getElementById("periodLabel");
+    toastEl              = document.getElementById("toast");
+    radarCanvas          = document.getElementById("weeklyRadar");
+    logContainer         = document.getElementById("logContent");
+
     views = {
-      todayView: document.getElementById("todayView"),
-      weeklyView: document.getElementById("weeklyView"),
-      insightsView: document.getElementById("insightsView"),
+      todayView:   document.getElementById("todayView"),
+      logView:     document.getElementById("logView"),
+      weeklyView:  document.getElementById("weeklyView"),
+      insightsView:document.getElementById("insightsView"),
       monthlyView: document.getElementById("monthlyView"),
-      logView: document.getElementById("logView"),
-      settingsView: document.getElementById("settingsView"),
-      tasksView: document.getElementById("tasksView")
+      settingsView:document.getElementById("settingsView"),
+      tasksView:   document.getElementById("tasksView")
     };
   }
 
@@ -357,11 +359,11 @@
     domainsCard.appendChild(domainsBody);
     todayContainer.appendChild(domainsCard);
 
-    // Tasks card (now includes manual list)
-    renderTasksToday(vm.tasks, vm.manual || []);
+    // Tasks card
+    renderTasksToday(vm.tasks);
   }
 
-  function renderTasksToday(taskPack, manualList){
+  function renderTasksToday(taskPack){
     var card=document.createElement("div");
     card.className="card";
 
@@ -394,13 +396,12 @@
 
     var pending = taskPack.pending || [];
     var done = taskPack.done || [];
-    var manual = manualList || [];
 
     var micro = pending.filter(function(t){return t.difficulty==="micro";});
     var standard = pending.filter(function(t){return t.difficulty==="standard";});
     var deep = pending.filter(function(t){return t.difficulty==="deep";});
 
-    var hasAny = micro.length || standard.length || deep.length || done.length || manual.length;
+    var hasAny = micro.length || standard.length || deep.length || done.length;
 
     if(!hasAny){
       var msg=document.createElement("div");
@@ -428,11 +429,9 @@
           if(!isDoneSection){
             checkbox.addEventListener("change",async function(){
               if(!checkbox.checked){
-                // prevent un-ticking done -> keep behaviour simple
                 checkbox.checked = false;
                 return;
               }
-              // Mark as done (engine moves to Done + replaces)
               await window.LWEngine.completeTask(task.id);
               renderAll();
               var domains = window.LWEngine.getDomains();
@@ -440,7 +439,6 @@
               showToast("Saved ✓ · "+domName);
             });
           }else{
-            // Done / manual section checkbox is read-only visual
             checkbox.disabled = true;
           }
 
@@ -483,7 +481,6 @@
       addGroup("Micro (5–10 mins)", micro, "Micro", false);
       addGroup("Standard (15–20 mins)", standard, "Standard", false);
       addGroup("Deep (20–30+ mins)", deep, "Deep", false);
-      addGroup("Manually logged", manual, "Logged", true);
       addGroup("Done", done, "Done", true);
     }
 
@@ -749,196 +746,6 @@
     insightsContainer.appendChild(focusCard);
   }
 
-  // ----- LOG VIEW -----
-  function renderLogView(){
-    if(!logContainer) return;
-    logContainer.innerHTML = "";
-
-    var domains = window.LWEngine.getDomains();
-    if(!domains.length){
-      var msg = document.createElement("div");
-      msg.className = "small-note";
-      msg.textContent = "No domains configured yet. Go to Settings first.";
-      logContainer.appendChild(msg);
-      return;
-    }
-
-    // Card for logging a new activity
-    var card = document.createElement("div");
-    card.className = "card";
-
-    var head = document.createElement("div");
-    head.className = "card-header";
-
-    var title = document.createElement("div");
-    title.className = "card-title";
-    title.textContent = "Log an extra activity";
-
-    head.appendChild(title);
-    card.appendChild(head);
-
-    var body = document.createElement("div");
-    body.className = "log-form";
-
-    // Domain select
-    var rowDom = document.createElement("div");
-    rowDom.className = "settings-row";
-    var domainSelect = document.createElement("select");
-    domains.forEach(function(dom, idx){
-      var opt = document.createElement("option");
-      opt.value = String(idx);
-      opt.textContent = dom.name;
-      domainSelect.appendChild(opt);
-    });
-    rowDom.appendChild(domainSelect);
-    body.appendChild(rowDom);
-
-    // Subdomain select
-    var rowSub = document.createElement("div");
-    rowSub.className = "settings-row";
-    var subSelect = document.createElement("select");
-
-    function populateSubdomains(){
-      subSelect.innerHTML = "";
-      var dIdx = parseInt(domainSelect.value, 10);
-      if(isNaN(dIdx) || !domains[dIdx]) return;
-      var subs = domains[dIdx].sub || [];
-      subs.forEach(function(name, sIdx){
-        var opt = document.createElement("option");
-        opt.value = String(sIdx);
-        opt.textContent = name;
-        subSelect.appendChild(opt);
-      });
-    }
-    populateSubdomains();
-    domainSelect.addEventListener("change", populateSubdomains);
-    rowSub.appendChild(subSelect);
-    body.appendChild(rowSub);
-
-    // Difficulty select
-    var rowDiff = document.createElement("div");
-    rowDiff.className = "settings-row";
-    var diffSelect = document.createElement("select");
-    [
-      ["micro","Micro (5–10 mins)"],
-      ["standard","Standard (15–20 mins)"],
-      ["deep","Deep (20–30+ mins)"]
-    ].forEach(function(pair){
-      var opt = document.createElement("option");
-      opt.value = pair[0];
-      opt.textContent = pair[1];
-      diffSelect.appendChild(opt);
-    });
-    rowDiff.appendChild(diffSelect);
-    body.appendChild(rowDiff);
-
-    // Label input
-    var rowLabel = document.createElement("div");
-    rowLabel.className = "settings-row";
-    var labelInput = document.createElement("input");
-    labelInput.type = "text";
-    labelInput.placeholder = "What did you do?";
-    rowLabel.appendChild(labelInput);
-    body.appendChild(rowLabel);
-
-    // Button
-    var rowBtn = document.createElement("div");
-    rowBtn.className = "settings-row";
-    var btn = document.createElement("button");
-    btn.className = "btn";
-    btn.textContent = "Add to today";
-    rowBtn.appendChild(btn);
-    body.appendChild(rowBtn);
-
-    btn.addEventListener("click", async function(){
-      var dIdx = parseInt(domainSelect.value, 10);
-      var sIdx = parseInt(subSelect.value, 10);
-      var diff = diffSelect.value || "micro";
-      var label = (labelInput.value || "").trim();
-      if(!label){
-        labelInput.focus();
-        return;
-      }
-      await window.LWEngine.addManualActivity(dIdx, sIdx, diff, label);
-      labelInput.value = "";
-      showToast("Activity logged ✓");
-      renderToday();    // update Today view’s tasks list
-      renderLogView();  // refresh log list below
-    });
-
-    card.appendChild(body);
-    logContainer.appendChild(card);
-
-    // Today's manually logged list
-    var manual = window.LWEngine.getManualTodayActivities();
-    if(manual && manual.length){
-      var listCard = document.createElement("div");
-      listCard.className = "card";
-
-      var lHead = document.createElement("div");
-      lHead.className = "card-header";
-      var lTitle = document.createElement("div");
-      lTitle.className = "card-title";
-      lTitle.textContent = "Today’s manually logged";
-      lHead.appendChild(lTitle);
-      listCard.appendChild(lHead);
-
-      var lBody = document.createElement("div");
-      lBody.className = "task-stack";
-
-      manual.forEach(function(task){
-        var row = document.createElement("div");
-        row.className = "task-row task-done";
-
-        var checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "task-checkbox";
-        checkbox.checked = true;
-        checkbox.disabled = true;
-
-        var main = document.createElement("div");
-        main.className = "task-main";
-
-        var label = document.createElement("div");
-        label.className = "task-label";
-        label.textContent = task.label;
-
-        var meta = document.createElement("div");
-        meta.className = "task-meta";
-        meta.textContent = "Logged · "+task.difficulty+" · energy "+task.energyCost+"/10";
-
-        var chip = document.createElement("div");
-        chip.className = "task-domain-chip";
-
-        var domName = "Domain";
-        if(typeof task.domainIdx === "number" &&
-           domains[task.domainIdx]){
-          domName = domains[task.domainIdx].name;
-          if(typeof task.subdomainIdx === "number" &&
-             domains[task.domainIdx].sub &&
-             domains[task.domainIdx].sub[task.subdomainIdx]){
-            chip.textContent = domName+" — "+domains[task.domainIdx].sub[task.subdomainIdx];
-          }else{
-            chip.textContent = domName;
-          }
-        }else{
-          chip.textContent = "Unmapped";
-        }
-
-        main.appendChild(label);
-        main.appendChild(meta);
-        main.appendChild(chip);
-
-        row.appendChild(checkbox);
-        row.appendChild(main);
-        lBody.appendChild(row);
-      });
-
-      listCard.appendChild(lBody);
-      logContainer.appendChild(listCard);
-    }
-  }
-
   // ----- SETTINGS VIEW -----
   function renderSettings(){
     if(!settingsContainer)return;
@@ -964,6 +771,7 @@
           renderToday();
           renderInsights();
           renderTaskTemplatesView();
+          renderLog();
           showToast("Saved ✓");
         });
       });
@@ -990,6 +798,7 @@
           renderInsights();
           renderToday();
           renderTaskTemplatesView();
+          renderLog();
           showToast("Saved ✓");
         });
       });
@@ -1087,6 +896,225 @@
     });
   }
 
+  // ----- LOG VIEW -----
+  function renderLog(){
+    if(!logContainer) return;
+    logContainer.innerHTML = "";
+
+    var domains = window.LWEngine.getDomains();
+    if(!domains.length){
+      var msg=document.createElement("div");
+      msg.className="small-note";
+      msg.textContent="No domains loaded yet.";
+      logContainer.appendChild(msg);
+      return;
+    }
+
+    // Form card
+    var formCard=document.createElement("div");
+    formCard.className="card";
+
+    var head=document.createElement("div");
+    head.className="card-header";
+
+    var title=document.createElement("div");
+    title.className="card-title";
+    title.textContent="Quick log";
+
+    head.appendChild(title);
+    formCard.appendChild(head);
+
+    var body=document.createElement("div");
+    body.className="slider-row";
+
+    // Domain select
+    var domainRow=document.createElement("div");
+    domainRow.className="settings-row";
+
+    var domainSelect=document.createElement("select");
+    domains.forEach(function(dom, idx){
+      var opt=document.createElement("option");
+      opt.value=String(idx);
+      opt.textContent=dom.name;
+      domainSelect.appendChild(opt);
+    });
+    domainRow.appendChild(domainSelect);
+    body.appendChild(domainRow);
+
+    // Subdomain select (updates when domain changes)
+    var subRow=document.createElement("div");
+    subRow.className="settings-row";
+
+    var subSelect=document.createElement("select");
+    subRow.appendChild(subSelect);
+    body.appendChild(subRow);
+
+    function refreshSubdomains(){
+      var dIdx=parseInt(domainSelect.value,10) || 0;
+      var dom = domains[dIdx];
+      subSelect.innerHTML="";
+      if(!dom || !dom.sub || !dom.sub.length){
+        var opt=document.createElement("option");
+        opt.value="-1";
+        opt.textContent="(no subdomains)";
+        subSelect.appendChild(opt);
+        return;
+      }
+      dom.sub.forEach(function(name, sIdx){
+        var opt=document.createElement("option");
+        opt.value=String(sIdx);
+        opt.textContent=name;
+        subSelect.appendChild(opt);
+      });
+    }
+    refreshSubdomains();
+    domainSelect.addEventListener("change",refreshSubdomains);
+
+    // Difficulty select
+    var diffRow=document.createElement("div");
+    diffRow.className="settings-row";
+
+    var diffSelect=document.createElement("select");
+    [
+      {value:"micro",   label:"Micro (5–10 mins)"},
+      {value:"standard",label:"Standard (15–20 mins)"},
+      {value:"deep",    label:"Deep (20–30+ mins)"}
+    ].forEach(function(d){
+      var opt=document.createElement("option");
+      opt.value=d.value;
+      opt.textContent=d.label;
+      diffSelect.appendChild(opt);
+    });
+    diffRow.appendChild(diffSelect);
+    body.appendChild(diffRow);
+
+    // Textarea
+    var taRow=document.createElement("div");
+    taRow.className="settings-row";
+
+    var ta=document.createElement("textarea");
+    ta.className="template-textarea";
+    ta.placeholder="Describe what you did (e.g., 'Played chess tactics for 10 mins')";
+    taRow.appendChild(ta);
+    body.appendChild(taRow);
+
+    // Button
+    var btnRow=document.createElement("div");
+    btnRow.className="settings-row";
+
+    var addBtn=document.createElement("button");
+    addBtn.className="btn";
+    addBtn.textContent="Add to today";
+    addBtn.style.fontSize="12px";
+    addBtn.style.padding="6px 12px";
+
+    addBtn.addEventListener("click", async function(){
+      var dIdx=parseInt(domainSelect.value,10);
+      if(isNaN(dIdx) || dIdx<0) dIdx=0;
+
+      var subIdx=parseInt(subSelect.value,10);
+      if(isNaN(subIdx) || subIdx<0) subIdx=null;
+
+      var diff=diffSelect.value || "standard";
+      var label=(ta.value||"").trim();
+      if(!label){
+        alert("Please enter what you did first.");
+        return;
+      }
+
+      try{
+        await window.LWEngine.logCompletedActivity(dIdx, subIdx, diff, label);
+        ta.value="";
+        showToast("Logged ✓");
+        renderToday();
+        renderLog();
+      }catch(err){
+        console.error("Error logging activity", err);
+        alert("Something went wrong logging this activity.");
+      }
+    });
+
+    btnRow.appendChild(addBtn);
+    body.appendChild(btnRow);
+
+    formCard.appendChild(body);
+    logContainer.appendChild(formCard);
+
+    // Logged-today card
+    var logged = window.LWEngine.getLoggedTasksForToday();
+    var anyLogged = logged && logged.length;
+
+    var logListCard=document.createElement("div");
+    logListCard.className="card";
+
+    var lHead=document.createElement("div");
+    lHead.className="card-header";
+
+    var lTitle=document.createElement("div");
+    lTitle.className="card-title";
+    lTitle.textContent="Logged today";
+
+    lHead.appendChild(lTitle);
+    logListCard.appendChild(lHead);
+
+    var lBody=document.createElement("div");
+    lBody.className="task-stack";
+
+    if(!anyLogged){
+      var empty=document.createElement("div");
+      empty.className="insights-secondary";
+      empty.textContent="Nothing logged via this screen yet today.";
+      lBody.appendChild(empty);
+    }else{
+      logged.forEach(function(task){
+        var row=document.createElement("div");
+        row.className="task-row task-done";
+
+        var checkbox=document.createElement("input");
+        checkbox.type="checkbox";
+        checkbox.className="task-checkbox";
+        checkbox.checked=true;
+        checkbox.disabled=true;
+
+        var main=document.createElement("div");
+        main.className="task-main";
+
+        var label=document.createElement("div");
+        label.className="task-label";
+        label.textContent=task.label;
+
+        var meta=document.createElement("div");
+        meta.className="task-meta";
+        meta.textContent=task.difficulty+" · logged";
+
+        var chip=document.createElement("div");
+        chip.className="task-domain-chip";
+        var domains = window.LWEngine.getDomains();
+        var domName = (domains[task.domainIdx] && domains[task.domainIdx].name) || "Domain";
+        if(typeof task.subdomainIdx==="number" &&
+           domains[task.domainIdx] &&
+           domains[task.domainIdx].sub &&
+           domains[task.domainIdx].sub[task.subdomainIdx]){
+          var subName = domains[task.domainIdx].sub[task.subdomainIdx];
+          chip.textContent = domName+" — "+subName;
+        }else{
+          chip.textContent=domName;
+        }
+
+        main.appendChild(label);
+        main.appendChild(meta);
+        main.appendChild(chip);
+
+        row.appendChild(checkbox);
+        row.appendChild(main);
+        lBody.appendChild(row);
+      });
+    }
+
+    logListCard.appendChild(lBody);
+    logContainer.appendChild(logListCard);
+  }
+
   // ----- Top-level render -----
   function renderAll(){
     updatePeriodLabel();
@@ -1097,7 +1125,7 @@
     drawRadar();
     renderInsights();
     renderToday();
-    renderLogView();
+    renderLog();
   }
 
   // ----- Init -----
@@ -1106,10 +1134,8 @@
     bindTabs();
     bindTasksDomainSelect();
 
-    // Initial render
     renderAll();
 
-    // Resize handler for radar
     window.addEventListener("resize",function(){
       clearTimeout(window.__lwResizeTimer);
       window.__lwResizeTimer=setTimeout(function(){
@@ -1119,8 +1145,6 @@
   }
 
   document.addEventListener("DOMContentLoaded",function(){
-    console.log("LWEngine at DOMContentLoaded:", window.LWEngine);
-    // First init engine (async), then UI
     window.LWEngine.init().then(function(){
       initUI();
     });
