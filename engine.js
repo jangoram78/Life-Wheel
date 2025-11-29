@@ -2,7 +2,7 @@
 (function(window){
   "use strict";
 
-  var APP_VERSION = "U15-Engine-Log";
+  var APP_VERSION = "U16-Engine-Log";
 
   // ---- localForage config (with safe fallback) ----
   var lf = window.localforage;
@@ -26,10 +26,10 @@
     storeName: "lifewheel_state"
   });
 
-  // Alias back to the name used elsewhere in this file
   var localforage = lf;
 
-  var STATE_KEY = "userState_v2";
+  // New key so we start from a clean, consistent state once
+  var STATE_KEY = "lifeWheelState_v3";
 
   // ----- Domain model -----
   var defaultDomains = [
@@ -41,7 +41,7 @@
     { name:"Spiritual",       sub:["Philosophy","Virtue"] }
   ];
 
-  // ----- Date helpers -----
+  // ----- Helpers for date keys -----
   function getTodayKey(){
     var d=new Date();
     var y=d.getFullYear();
@@ -143,7 +143,8 @@
       done: []
     };
 
-    var templates = {}; // domainIdx -> subIdx -> {micro,standard,deep}
+    var templates = {};   // domainIdx -> subIdx -> {micro,standard,deep}
+    var loggedTasks = {}; // dateKey -> [logged task objects]
 
     return {
       version: 1,
@@ -155,7 +156,8 @@
       weeklyScores: weeklyScores,
       monthlyScores: monthlyScores,
       tasks: tasks,
-      templates: templates
+      templates: templates,
+      loggedTasks: loggedTasks
     };
   }
 
@@ -179,6 +181,9 @@
     }
     if (!userState.templates || typeof userState.templates !== "object") {
       userState.templates = {};
+    }
+    if (!userState.loggedTasks || typeof userState.loggedTasks !== "object") {
+      userState.loggedTasks = {};
     }
 
     // Weekly frame
@@ -210,13 +215,18 @@
       }
     }
 
-    // Today tasks
+    // Tasks slot for today
     if (!userState.tasks[todayKey]) {
       userState.tasks[todayKey] = { pending: [], done: [] };
     } else {
       var pack = userState.tasks[todayKey];
       if (!Array.isArray(pack.pending)) pack.pending = [];
-      if (!Array.isArray(pack.done))    pack.done    = [];
+      if (!Array.isArray(pack.done))    pack.done = [];
+    }
+
+    // Logged tasks slot for today
+    if (!Array.isArray(userState.loggedTasks[todayKey])) {
+      userState.loggedTasks[todayKey] = [];
     }
   }
 
@@ -445,7 +455,7 @@
     }
 
     var newPack = generateBaseTaskPack();
-    // IMPORTANT: keep done list; just replace pending
+    // keep done list; just replace pending
     pack.pending = newPack.pending;
   }
 
@@ -519,19 +529,20 @@
     return localforage.setItem(STATE_KEY,userState);
   }
 
-  // ----- Public API core -----
+  // ----- Public API -----
+
   async function init(){
     var stored = await localforage.getItem(STATE_KEY);
 
     if (stored && typeof stored === "object") {
       userState = stored;
 
+      // Safety guards / migrations
       if (!userState.domains || !Array.isArray(userState.domains) || !userState.domains.length) {
         userState.domains = defaultDomains.map(function(d){
           return { name: d.name, sub: d.sub.slice(0) };
         });
       }
-
       if (!userState.weeklyScores || typeof userState.weeklyScores !== "object") {
         userState.weeklyScores = {};
       }
@@ -544,6 +555,11 @@
       if (!userState.templates || typeof userState.templates !== "object") {
         userState.templates = {};
       }
+      if (!userState.loggedTasks || typeof userState.loggedTasks !== "object") {
+        userState.loggedTasks = {};
+      }
+
+      userState.appVersion = APP_VERSION;
 
     } else {
       userState = buildDefaultState();
@@ -681,13 +697,13 @@
 
     var focusIdx = null;
     if(deltas.length){
-      var minScoreVal = Infinity;
+      var minScore = Infinity;
       var candidates = [];
       for(i=0;i<deltas.length;i++){
-        if(deltas[i].cur < minScoreVal){
-          minScoreVal = deltas[i].cur;
+        if(deltas[i].cur < minScore){
+          minScore = deltas[i].cur;
           candidates = [i];
-        }else if(deltas[i].cur === minScoreVal){
+        }else if(deltas[i].cur === minScore){
           candidates.push(i);
         }
       }
@@ -776,74 +792,23 @@
       return;
     }
 
+    // Remove from pending
     pack.pending.splice(idx,1);
+
+    // Mark done and push into done list
     found.state = "done";
     pack.done.push(found);
 
+    // Apply impact
     applyTaskCompletionImpact(found);
 
+    // Generate replacement with same domain + difficulty
     var replacement = generateTaskForDomainAndDifficulty(found.domainIdx, found.difficulty);
     pack.pending.push(replacement);
 
     await saveState();
   }
 
-  // ----- NEW: log completed activities directly -----
-  async function logCompletedActivity(domainIdx, subIdx, difficulty, label){
-    ensureCurrentFrames();
-    var todayKey = userState.todayKey;
-    var pack = userState.tasks[todayKey];
-    if(!pack){
-      pack = { pending:[], done:[] };
-      userState.tasks[todayKey] = pack;
-    }
-    if(!Array.isArray(pack.pending)) pack.pending=[];
-    if(!Array.isArray(pack.done))    pack.done=[];
-
-    var diff = (difficulty === "micro" || difficulty === "standard" || difficulty === "deep")
-      ? difficulty
-      : "standard";
-
-    var duration, energy;
-    if(diff==="micro"){ duration=10; energy=3; }
-    else if(diff==="standard"){ duration=20; energy=5; }
-    else { duration=25; energy=7; }
-
-    var id = todayKey+"-log-"+Date.now()+"-"+Math.floor(Math.random()*10000);
-
-    var task = {
-      id: id,
-      domainIdx: domainIdx,
-      subdomainIdx: (typeof subIdx === "number" ? subIdx : null),
-      difficulty: diff,
-      label: label,
-      energyCost: energy,
-      expectedDuration: duration,
-      state: "done",
-      createdAt: new Date().toISOString(),
-      source: "log"
-    };
-
-    pack.done.push(task);
-    applyTaskCompletionImpact(task);
-    await saveState();
-    return task;
-  }
-
-  // Backwards-compat alias if UI calls older name
-  async function addLoggedTaskToToday(domainIdx, subIdx, difficulty, label){
-    return logCompletedActivity(domainIdx, subIdx, difficulty, label);
-  }
-
-  function getLoggedTasksForToday(){
-    ensureCurrentFrames();
-    var todayKey = userState.todayKey;
-    var pack = userState.tasks[todayKey];
-    if(!pack || !Array.isArray(pack.done)) return [];
-    return pack.done.filter(function(t){ return t && t.source==="log"; });
-  }
-
-  // ----- Task templates -----
   function getTaskTemplatesForDomain(domainIdx){
     var dom = userState.domains[domainIdx];
     if(!dom) return [];
@@ -877,6 +842,7 @@
     if(!userState.domains[domainIdx]) return;
     if(!newSubs || !newSubs.length) return;
     userState.domains[domainIdx].sub = newSubs.slice(0);
+    // Ensure monthly scores + templates consistent
     var monthKey = userState.monthKey;
     if(!userState.monthlyScores[monthKey][domainIdx]){
       userState.monthlyScores[monthKey][domainIdx] = {};
@@ -903,6 +869,79 @@
     return { labels:labels, values:values };
   }
 
+  // ----- Logged activities (Log tab) -----
+  async function logCompletedActivity(domainIdx, maybeSubIdx, difficulty, label){
+    ensureCurrentFrames();
+
+    if(typeof domainIdx!=="number" || domainIdx<0 || domainIdx>=userState.domains.length){
+      domainIdx = 0;
+    }
+
+    var subIdx = (typeof maybeSubIdx==="number" && maybeSubIdx>=0) ? maybeSubIdx : null;
+    if(subIdx!==null){
+      var dom = userState.domains[domainIdx];
+      if(!dom || !dom.sub || subIdx>=dom.sub.length){
+        subIdx = null;
+      }
+    }
+
+    if(difficulty!=="micro" && difficulty!=="standard" && difficulty!=="deep"){
+      difficulty = "standard";
+    }
+
+    var todayKey = userState.todayKey;
+    var nowIso = new Date().toISOString();
+    var id = todayKey + "-logged-" + Math.floor(Math.random()*1000000);
+
+    var energy, duration;
+    if(difficulty==="micro"){ energy=3; duration=10; }
+    else if(difficulty==="standard"){ energy=5; duration=20; }
+    else { energy=7; duration=25; }
+
+    var task = {
+      id: id,
+      domainIdx: domainIdx,
+      subdomainIdx: subIdx,
+      difficulty: difficulty,
+      label: label,
+      energyCost: energy,
+      expectedDuration: duration,
+      state: "logged",
+      createdAt: nowIso
+    };
+
+    // Ensure tasks + loggedTasks containers
+    if(!userState.tasks[todayKey]){
+      userState.tasks[todayKey] = { pending:[], done:[] };
+    }
+    if(!Array.isArray(userState.tasks[todayKey].pending)){
+      userState.tasks[todayKey].pending = [];
+    }
+    if(!Array.isArray(userState.tasks[todayKey].done)){
+      userState.tasks[todayKey].done = [];
+    }
+    if(!Array.isArray(userState.loggedTasks[todayKey])){
+      userState.loggedTasks[todayKey] = [];
+    }
+
+    // Add to done list so it appears in Today
+    userState.tasks[todayKey].done.push(task);
+    // Add to logged today list
+    userState.loggedTasks[todayKey].push(task);
+    // Apply impact to weekly score
+    applyTaskCompletionImpact(task);
+
+    await saveState();
+  }
+
+  function getLoggedTasksForToday(){
+    var todayKey = userState.todayKey;
+    var arr = userState.loggedTasks[todayKey];
+    if(!Array.isArray(arr)) return [];
+    return arr.slice(0);
+  }
+
+  // Debug helpers (optional)
   function getState(){
     return userState;
   }
@@ -927,17 +966,13 @@
     updateMonthlySubScore: updateMonthlySubScore,
     regenerateTodayTasks: regenerateTodayTasks,
     completeTask: completeTask,
-    // NEW logging APIs
-    logCompletedActivity: logCompletedActivity,
-    addLoggedTaskToToday: addLoggedTaskToToday,
-    getLoggedTasksForToday: getLoggedTasksForToday,
-    // templates / structure
     getTaskTemplatesForDomain: getTaskTemplatesForDomain,
     updateTaskTemplateBlock: updateTaskTemplateBlock,
     updateDomainName: updateDomainName,
     updateDomainSubdomains: updateDomainSubdomains,
-    // charts
-    getRadarData: getRadarData
+    getRadarData: getRadarData,
+    logCompletedActivity: logCompletedActivity,
+    getLoggedTasksForToday: getLoggedTasksForToday
   };
 
 })(window);
