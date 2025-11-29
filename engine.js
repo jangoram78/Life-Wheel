@@ -2,34 +2,35 @@
 (function(window){
   "use strict";
 
-  var APP_VERSION = "U16-Engine-Log";
+  var APP_VERSION = "U17-Engine-LocalStorage";
 
-  // ---- localForage config (with safe fallback) ----
-  var lf = window.localforage;
-  if (!lf) {
-    console.warn("[LifeWheel] localforage not found – using in-memory fallback (no persistence).");
-    lf = {
-      _data: {},
-      config: function(){},
-      getItem: function(key){
-        return Promise.resolve(this._data[key] || null);
-      },
-      setItem: function(key, value){
-        this._data[key] = value;
-        return Promise.resolve(value);
-      }
-    };
-  }
-
-  lf.config({
-    name: "LifeWheelApp",
-    storeName: "lifewheel_state"
-  });
-
-  var localforage = lf;
-
-  // New key so we start from a clean, consistent state once
+  // ---- Simple async storage wrapper using localStorage ----
   var STATE_KEY = "lifeWheelState_v3";
+
+  var storage = {
+    getItem: function(key){
+      return new Promise(function(resolve){
+        try {
+          var raw = window.localStorage.getItem(key);
+          if (!raw) return resolve(null);
+          resolve(JSON.parse(raw));
+        } catch (e) {
+          console.warn("[LifeWheel] storage.getItem error", e);
+          resolve(null);
+        }
+      });
+    },
+    setItem: function(key, value){
+      return new Promise(function(resolve){
+        try {
+          window.localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+          console.warn("[LifeWheel] storage.setItem error", e);
+        }
+        resolve(value);
+      });
+    }
+  };
 
   // ----- Domain model -----
   var defaultDomains = [
@@ -526,13 +527,13 @@
 
   // ----- Persistence -----
   function saveState(){
-    return localforage.setItem(STATE_KEY,userState);
+    return storage.setItem(STATE_KEY,userState);
   }
 
   // ----- Public API -----
 
   async function init(){
-    var stored = await localforage.getItem(STATE_KEY);
+    var stored = await storage.getItem(STATE_KEY);
 
     if (stored && typeof stored === "object") {
       userState = stored;
@@ -941,7 +942,7 @@
     return arr.slice(0);
   }
 
-  // Debug helpers (optional)
+  // Debug helpers
   function getState(){
     return userState;
   }
