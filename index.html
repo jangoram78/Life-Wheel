@@ -15,7 +15,7 @@
 
     <!-- TODAY VIEW -->
     <div id="todayView" class="view active">
-      <!-- Weekly wheel (moved from Weekly tab) -->
+      <!-- Weekly radar moved here as the top panel -->
       <div class="section">
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
@@ -24,7 +24,6 @@
         </div>
       </div>
 
-      <!-- Nudge + tasks are rendered into todayContent -->
       <div class="section">
         <div id="todayContent"></div>
       </div>
@@ -33,18 +32,30 @@
     <!-- INSIGHTS VIEW -->
     <div id="insightsView" class="view">
       <div class="section">
-        <div class="section-title">Weekly insights</div>
+        <div class="section-title">Weekly & trend insights</div>
         <div id="insightsContent"></div>
       </div>
     </div>
 
-    <!-- SETUP VIEW (Settings + My Tasks combined) -->
+    <!-- LOG VIEW -->
+    <div id="logView" class="view">
+      <div class="section">
+        <div class="section-title">Log activity</div>
+        <div class="small-note">
+          Quickly log core daily actions and other activities straight into today’s Done list.
+        </div>
+      </div>
+      <div class="section">
+        <div id="logContent"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS VIEW (includes Domains + My Tasks) -->
     <div id="settingsView" class="view">
       <div class="section">
-        <div class="section-title">Domains & subdomains</div>
+        <div class="section-title">Domains</div>
         <div class="settings-hint">
-          Domain list is seeded from your Life Wheel model.
-          (You can rename domains/subdomains here; structure is kept in sync.)
+          You can rename domains and subdomains here. This structure drives the wheel, tasks, and insights.
         </div>
         <div id="settingsDomains"></div>
       </div>
@@ -66,44 +77,8 @@
         <div class="card">
           <div class="small-note">
             Data is stored locally on this device using your browser's storage
-            (IndexedDB via localForage). Clearing site data will reset your scores.
+            (IndexedDB via localForage). Clearing site data will reset your scores and tasks.
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- LOG VIEW (log extra activities) -->
-    <div id="logView" class="view">
-      <div class="section">
-        <div class="section-title">Log an activity</div>
-        <div class="small-note">
-          Use this to log something you did that isn’t on today’s list.
-          It will still count towards your weekly scores.
-        </div>
-
-        <div class="settings-row" style="margin-top:4px;">
-          <select id="logDomainSelect"></select>
-        </div>
-
-        <div class="settings-row">
-          <select id="logSubdomainSelect"></select>
-        </div>
-
-        <div class="settings-row">
-          <select id="logDifficultySelect">
-            <option value="micro">Micro (5–10 mins)</option>
-            <option value="standard">Standard (15–20 mins)</option>
-            <option value="deep">Deep (20–30+ mins)</option>
-          </select>
-        </div>
-
-        <div class="settings-row">
-          <input id="logLabelInput" type="text" placeholder="Describe what you did">
-          <button id="logAddButton" class="btn">Add</button>
-        </div>
-
-        <div class="small-note">
-          Once added, the activity will appear under “Done” in Today and update your weekly scores.
         </div>
       </div>
     </div>
@@ -126,16 +101,16 @@
           <div class="tab-label">Insights</div>
         </div>
       </button>
+      <button class="tab-btn" data-view="logView">
+        <div class="tab-pill">
+          <div class="tab-icon">📝</div>
+          <div class="tab-label">Log</div>
+        </div>
+      </button>
       <button class="tab-btn" data-view="settingsView">
         <div class="tab-pill">
           <div class="tab-icon">⚙️</div>
-          <div class="tab-label">Setup</div>
-        </div>
-      </button>
-      <button class="tab-btn" data-view="logView">
-        <div class="tab-pill">
-          <div class="tab-icon">✏️</div>
-          <div class="tab-label">Log</div>
+          <div class="tab-label">Settings</div>
         </div>
       </button>
     </div>
@@ -146,6 +121,7 @@
           integrity="sha512-SHuw0kqLNVxCnjGaV9HVVVaFyqfZBFua5pWjexDzfrvkHTUiZxkgWzvfHWUV4OeTnAqP8C1QztQNl5w2vCqFcw=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+  <!-- Engine + activities seeding + UI -->
   <script src="engine.js"></script>
   <script src="activities.js"></script>
   <script src="ui.js"></script>
