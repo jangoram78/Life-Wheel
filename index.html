@@ -24,7 +24,11 @@
     <!-- LOG VIEW -->
     <div id="logView" class="view">
       <div class="section">
-        <div class="section-title">Log extra activity</div>
+        <div class="section-title">Log an activity</div>
+        <div class="small-note" style="margin-bottom:4px;">
+          Use this when you’ve done something that isn’t already on today’s list.
+          It will be recorded as done and counted towards your weekly scores.
+        </div>
         <div id="logContent"></div>
       </div>
     </div>
@@ -81,7 +85,7 @@
       </div>
     </div>
 
-    <!-- MY TASKS VIEW -->
+    <!-- MY TASKS VIEW (TEMPLATES) -->
     <div id="tasksView" class="view">
       <div class="section">
         <div class="section-title">My task library</div>
@@ -107,42 +111,36 @@
           <div class="tab-label">Today</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="logView">
         <div class="tab-pill">
           <div class="tab-icon">➕</div>
           <div class="tab-label">Log</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="weeklyView">
         <div class="tab-pill">
           <div class="tab-icon">🗓️</div>
           <div class="tab-label">Weekly</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="insightsView">
         <div class="tab-pill">
           <div class="tab-icon">📘</div>
           <div class="tab-label">Insights</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="monthlyView">
         <div class="tab-pill">
           <div class="tab-icon">📊</div>
           <div class="tab-label">Monthly</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="settingsView">
         <div class="tab-pill">
           <div class="tab-icon">⚙️</div>
           <div class="tab-label">Settings</div>
         </div>
       </button>
-
       <button class="tab-btn" data-view="tasksView">
         <div class="tab-pill">
           <div class="tab-icon">✅</div>
@@ -152,9 +150,15 @@
     </div>
   </div>
 
-<script src="engine.js"></script>
-<script src="activities.js"></script> <!-- if you still have this -->
-<script src="ui.js"></script>
+  <!-- localForage for unified state persistence -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"
+          integrity="sha512-SHuw0kqLNVxCnjGaV9HVVVaFyqfZBFua5pWjexDzfrvkHTUiZxkgWzvfHWUV4OeTnAqP8C1QztQNl5w2vCqFcw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+  <!-- Optional: if you still have activities.js this is harmless -->
+  <script src="activities.js"></script>
+
+  <script src="engine.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>
