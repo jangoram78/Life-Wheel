@@ -470,3 +470,8 @@ body{
   resize:vertical;
   min-height:40px;
 }
+.log-form{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
