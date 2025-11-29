@@ -15,26 +15,7 @@
 
     <!-- TODAY VIEW -->
     <div id="todayView" class="view active">
-      <div class="section">
-        <div class="section-title">Today</div>
-        <div id="todayContent"></div>
-      </div>
-    </div>
-
-    <!-- LOG VIEW -->
-    <div id="logView" class="view">
-      <div class="section">
-        <div class="section-title">Log an activity</div>
-        <div class="small-note" style="margin-bottom:4px;">
-          Use this when you’ve done something that isn’t already on today’s list.
-          It will be recorded as done and counted towards your weekly scores.
-        </div>
-        <div id="logContent"></div>
-      </div>
-    </div>
-
-    <!-- WEEKLY VIEW -->
-    <div id="weeklyView" class="view">
+      <!-- Weekly wheel (moved from Weekly tab) -->
       <div class="section">
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
@@ -42,9 +23,10 @@
           </div>
         </div>
       </div>
+
+      <!-- Nudge + tasks are rendered into todayContent -->
       <div class="section">
-        <div class="section-title">Weekly scores</div>
-        <div id="weeklyDomains"></div>
+        <div id="todayContent"></div>
       </div>
     </div>
 
@@ -56,37 +38,17 @@
       </div>
     </div>
 
-    <!-- MONTHLY VIEW -->
-    <div id="monthlyView" class="view">
-      <div class="section">
-        <div class="section-title">Monthly subdomain scores</div>
-        <div id="monthlyDomains"></div>
-      </div>
-    </div>
-
-    <!-- SETTINGS VIEW -->
+    <!-- SETUP VIEW (Settings + My Tasks combined) -->
     <div id="settingsView" class="view">
       <div class="section">
-        <div class="section-title">Domains</div>
+        <div class="section-title">Domains & subdomains</div>
         <div class="settings-hint">
           Domain list is seeded from your Life Wheel model.
           (You can rename domains/subdomains here; structure is kept in sync.)
         </div>
         <div id="settingsDomains"></div>
       </div>
-      <div class="section">
-        <div class="section-title">Info</div>
-        <div class="card">
-          <div class="small-note">
-            Data is stored locally on this device using your browser's storage
-            (IndexedDB via localForage). Clearing site data will reset your scores.
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- MY TASKS VIEW (TEMPLATES) -->
-    <div id="tasksView" class="view">
       <div class="section">
         <div class="section-title">My task library</div>
         <div class="small-note">
@@ -98,11 +60,58 @@
         </div>
         <div id="taskTemplatesContainer"></div>
       </div>
+
+      <div class="section">
+        <div class="section-title">Info</div>
+        <div class="card">
+          <div class="small-note">
+            Data is stored locally on this device using your browser's storage
+            (IndexedDB via localForage). Clearing site data will reset your scores.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG VIEW (log extra activities) -->
+    <div id="logView" class="view">
+      <div class="section">
+        <div class="section-title">Log an activity</div>
+        <div class="small-note">
+          Use this to log something you did that isn’t on today’s list.
+          It will still count towards your weekly scores.
+        </div>
+
+        <div class="settings-row" style="margin-top:4px;">
+          <select id="logDomainSelect"></select>
+        </div>
+
+        <div class="settings-row">
+          <select id="logSubdomainSelect"></select>
+        </div>
+
+        <div class="settings-row">
+          <select id="logDifficultySelect">
+            <option value="micro">Micro (5–10 mins)</option>
+            <option value="standard">Standard (15–20 mins)</option>
+            <option value="deep">Deep (20–30+ mins)</option>
+          </select>
+        </div>
+
+        <div class="settings-row">
+          <input id="logLabelInput" type="text" placeholder="Describe what you did">
+          <button id="logAddButton" class="btn">Add</button>
+        </div>
+
+        <div class="small-note">
+          Once added, the activity will appear under “Done” in Today and update your weekly scores.
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="toast" class="toast">Saved ✓</div>
 
+  <!-- TAB BAR -->
   <div class="tabbar">
     <div class="tabbar-inner">
       <button class="tab-btn active" data-view="todayView">
@@ -111,40 +120,22 @@
           <div class="tab-label">Today</div>
         </div>
       </button>
-      <button class="tab-btn" data-view="logView">
-        <div class="tab-pill">
-          <div class="tab-icon">➕</div>
-          <div class="tab-label">Log</div>
-        </div>
-      </button>
-      <button class="tab-btn" data-view="weeklyView">
-        <div class="tab-pill">
-          <div class="tab-icon">🗓️</div>
-          <div class="tab-label">Weekly</div>
-        </div>
-      </button>
       <button class="tab-btn" data-view="insightsView">
         <div class="tab-pill">
           <div class="tab-icon">📘</div>
           <div class="tab-label">Insights</div>
         </div>
       </button>
-      <button class="tab-btn" data-view="monthlyView">
-        <div class="tab-pill">
-          <div class="tab-icon">📊</div>
-          <div class="tab-label">Monthly</div>
-        </div>
-      </button>
       <button class="tab-btn" data-view="settingsView">
         <div class="tab-pill">
           <div class="tab-icon">⚙️</div>
-          <div class="tab-label">Settings</div>
+          <div class="tab-label">Setup</div>
         </div>
       </button>
-      <button class="tab-btn" data-view="tasksView">
+      <button class="tab-btn" data-view="logView">
         <div class="tab-pill">
-          <div class="tab-icon">✅</div>
-          <div class="tab-label">My tasks</div>
+          <div class="tab-icon">✏️</div>
+          <div class="tab-label">Log</div>
         </div>
       </button>
     </div>
@@ -155,10 +146,8 @@
           integrity="sha512-SHuw0kqLNVxCnjGaV9HVVVaFyqfZBFua5pWjexDzfrvkHTUiZxkgWzvfHWUV4OeTnAqP8C1QztQNl5w2vCqFcw=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-  <!-- Optional: if you still have activities.js this is harmless -->
-
- <script src="engine.js"></script>
-<script src="activities.js"></script>
-<script src="ui.js"></script>
+  <script src="engine.js"></script>
+  <script src="activities.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>
