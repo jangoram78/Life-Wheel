@@ -8,6 +8,7 @@
   if (!window.LWEngine && !window.LWengine) {
     console.error("Life Wheel engine not found (expected LWEngine or LWengine).");
   }
+
   var todayContainer,
       weeklyContainer,
       monthlyContainer,
@@ -33,37 +34,38 @@
   }
 
   function initDomRefs(){
-    todayContainer = document.getElementById("todayContent");
-    weeklyContainer = document.getElementById("weeklyDomains");
-    monthlyContainer = document.getElementById("monthlyDomains");
-    settingsContainer = document.getElementById("settingsDomains");
-    insightsContainer = document.getElementById("insightsContent");
-    tasksDomainSelect = document.getElementById("tasksDomainSelect");
-    taskTemplatesContainer = document.getElementById("taskTemplatesContainer");
-    periodLabel = document.getElementById("periodLabel");
-    toastEl = document.getElementById("toast");
-    radarCanvas = document.getElementById("weeklyRadar");
+    todayContainer        = document.getElementById("todayContent");
+    weeklyContainer       = document.getElementById("weeklyDomains");
+    monthlyContainer      = document.getElementById("monthlyDomains");
+    settingsContainer     = document.getElementById("settingsDomains");
+    insightsContainer     = document.getElementById("insightsContent");
+    tasksDomainSelect     = document.getElementById("tasksDomainSelect");
+    taskTemplatesContainer= document.getElementById("taskTemplatesContainer");
+    periodLabel           = document.getElementById("periodLabel");
+    toastEl               = document.getElementById("toast");
+    radarCanvas           = document.getElementById("weeklyRadar");
+
+    // Only the three real views now
     views = {
-      todayView: document.getElementById("todayView"),
-      weeklyView: document.getElementById("weeklyView"),
+      todayView:    document.getElementById("todayView"),
       insightsView: document.getElementById("insightsView"),
-      monthlyView: document.getElementById("monthlyView"),
-      settingsView: document.getElementById("settingsView"),
-      tasksView: document.getElementById("tasksView")
+      settingsView: document.getElementById("settingsView")
     };
   }
 
   function bindTabs(){
-    var buttons=document.querySelectorAll(".tab-btn");
+    var buttons = document.querySelectorAll(".tab-btn");
     buttons.forEach(function(btn){
       btn.addEventListener("click",function(){
-        var target=btn.getAttribute("data-view");
-        if(!views[target])return;
+        var target = btn.getAttribute("data-view");
+        if(!views[target]) return;
         Object.keys(views).forEach(function(k){
-          views[k].classList.remove("active");
+          if(views[k]){
+            views[k].classList.remove("active");
+          }
         });
         views[target].classList.add("active");
-        buttons.forEach(function(b){b.classList.remove("active")});
+        buttons.forEach(function(b){ b.classList.remove("active"); });
         btn.classList.add("active");
       });
     });
@@ -100,17 +102,17 @@
     var n = labels.length;
     if(!n) return;
 
-    var dpr=window.devicePixelRatio||1;
-    var rect=radarCanvas.getBoundingClientRect();
-    var size=Math.min(rect.width||260,320)*0.7;
-    radarCanvas.width=size*dpr;
-    radarCanvas.height=size*dpr;
+    var dpr  = window.devicePixelRatio || 1;
+    var rect = radarCanvas.getBoundingClientRect();
+    var size = Math.min(rect.width || 260, 320) * 0.7;
+    radarCanvas.width  = size * dpr;
+    radarCanvas.height = size * dpr;
 
-    var ctx=radarCanvas.getContext("2d");
+    var ctx = radarCanvas.getContext("2d");
     ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,size,size);
 
-    var cx=size/2,cy=size/2;
+    var cx=size/2, cy=size/2;
     var radius=size*0.42;
     var maxVal=10;
     var step=(Math.PI*2)/n;
@@ -389,11 +391,11 @@
     body.className="task-stack";
 
     var pending = taskPack.pending || [];
-    var done = taskPack.done || [];
+    var done    = taskPack.done || [];
 
-    var micro = pending.filter(function(t){return t.difficulty==="micro";});
-    var standard = pending.filter(function(t){return t.difficulty==="standard";});
-    var deep = pending.filter(function(t){return t.difficulty==="deep";});
+    var micro   = pending.filter(function(t){return t.difficulty==="micro";});
+    var standard= pending.filter(function(t){return t.difficulty==="standard";});
+    var deep    = pending.filter(function(t){return t.difficulty==="deep";});
 
     var hasAny = micro.length || standard.length || deep.length || done.length;
 
@@ -427,7 +429,6 @@
                 checkbox.checked = false;
                 return;
               }
-              // Mark as done (engine moves to Done + replaces)
               await window.LWEngine.completeTask(task.id);
               renderAll();
               var domains = window.LWEngine.getDomains();
@@ -435,7 +436,6 @@
               showToast("Saved ✓ · "+domName);
             });
           }else{
-            // Done section checkbox is read-only visual
             checkbox.disabled = true;
           }
 
@@ -475,17 +475,17 @@
         });
       }
 
-      addGroup("Micro (5–10 mins)", micro, "Micro", false);
-      addGroup("Standard (15–20 mins)", standard, "Standard", false);
-      addGroup("Deep (20–30+ mins)", deep, "Deep", false);
-      addGroup("Done", done, "Done", true);
+      addGroup("Micro (5–10 mins)",     micro,    "Micro",   false);
+      addGroup("Standard (15–20 mins)", standard, "Standard",false);
+      addGroup("Deep (20–30+ mins)",    deep,     "Deep",    false);
+      addGroup("Done",                  done,     "Done",    true);
     }
 
     card.appendChild(body);
     todayContainer.appendChild(card);
   }
 
-  // ----- WEEKLY VIEW -----
+  // ----- WEEKLY VIEW (now rendered inside Insights) -----
   function renderWeekly(){
     if(!weeklyContainer)return;
     weeklyContainer.innerHTML="";
@@ -536,7 +536,7 @@
     });
   }
 
-  // ----- MONTHLY VIEW -----
+  // ----- MONTHLY VIEW (now rendered inside Insights) -----
   function renderMonthly(){
     if(!monthlyContainer)return;
     monthlyContainer.innerHTML="";
@@ -597,7 +597,6 @@
     insightsContainer.innerHTML="";
 
     var vm = window.LWEngine.getInsightsVM();
-    var domains = window.LWEngine.getDomains();
 
     // Summary card
     var summaryCard=document.createElement("div");
@@ -785,7 +784,7 @@
 
       inputSub.addEventListener("change",function(e){
         var raw=e.target.value||"";
-        var parts=raw.split(",").map(function(s){return s.trim()}).filter(Boolean);
+        var parts=raw.split(",").map(function(s){return s.trim();}).filter(Boolean);
         if(!parts.length) parts=["Aspect 1","Aspect 2","Aspect 3"];
         window.LWEngine.updateDomainSubdomains(idx,parts).then(function(){
           renderMonthly();
@@ -804,7 +803,7 @@
     });
   }
 
-  // ----- MY TASKS VIEW -----
+  // ----- MY TASKS VIEW (now inside Settings) -----
   function renderTaskTemplatesView(){
     if(!tasksDomainSelect || !taskTemplatesContainer) return;
 
@@ -872,7 +871,7 @@
 
       addArea("Micro (5–10 mins)","micro",t.micro);
       addArea("Standard (15–20 mins)","standard",t.standard);
-      addArea("Deep (20–30+ mins)","deep",t.deep);
+      addArea("Deep (20–30 mins)","deep",t.deep);
 
       body.appendChild(subCard);
     });
@@ -894,13 +893,13 @@
   // ----- Top-level render -----
   function renderAll(){
     updatePeriodLabel();
-    renderWeekly();
-    renderMonthly();
-    renderSettings();
-    renderTaskTemplatesView();
-    drawRadar();
-    renderInsights();
-    renderToday();
+    renderWeekly();            // weekly scores (now inside Insights)
+    renderMonthly();           // monthly sliders (also inside Insights)
+    renderSettings();          // domain names/subdomains
+    renderTaskTemplatesView(); // my task library
+    drawRadar();               // radar for Insights
+    renderInsights();          // insights cards
+    renderToday();             // Today view
   }
 
   // ----- Init -----
@@ -909,10 +908,8 @@
     bindTabs();
     bindTasksDomainSelect();
 
-    // Initial render
     renderAll();
 
-    // Resize handler for radar
     window.addEventListener("resize",function(){
       clearTimeout(window.__lwResizeTimer);
       window.__lwResizeTimer=setTimeout(function(){
@@ -922,11 +919,10 @@
   }
 
   document.addEventListener("DOMContentLoaded",function(){
-  console.log("LWEngine at DOMContentLoaded:", window.LWEngine);
-  // First init engine (async), then UI
-  window.LWEngine.init().then(function(){
-    initUI();
+    console.log("LWEngine at DOMContentLoaded:", window.LWEngine);
+    window.LWEngine.init().then(function(){
+      initUI();
+    });
   });
-});
 
 })(window);
