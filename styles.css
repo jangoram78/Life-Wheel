@@ -4,13 +4,15 @@
   padding: 0;
 }
 
+/* ---------- GLOBAL ---------- */
+
 html,
 body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "Inter", system-ui, sans-serif;
-  background: #f4f7fa;
-  color: #111827;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", "Inter", system-ui, sans-serif;
+  background: #f4f6fb;
+  color: #0f172a;
   overscroll-behavior: none;
 }
 
@@ -19,7 +21,7 @@ body {
   flex-direction: column;
 }
 
-/* ----- APP LAYOUT ----- */
+/* ---------- APP LAYOUT ---------- */
 
 .app {
   flex: 1;
@@ -27,34 +29,34 @@ body {
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
-  padding: 8px 10px 72px;
+  padding: 6px 10px 78px;
 }
 
-/* Header: title + period label */
+/* ---------- HEADER ---------- */
 
 .app-header {
-  padding: 4px 4px 6px;
+  padding: 4px 2px 6px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .app-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
+  line-height: 1.2;
   margin: 0;
-  letter-spacing: 0.01em;
 }
 
 .app-subtitle {
-  font-size: 11px;
-  color: #9ba3b5;
-  opacity: 0.95;
+  font-size: 12px;
+  color: #64748b;
+  opacity: 0.96;
   white-space: nowrap;
 }
 
-/* ----- VIEWS & SECTIONS ----- */
+/* ---------- VIEWS ---------- */
 
 .view {
   display: none;
@@ -68,45 +70,44 @@ body {
 }
 
 .section {
-  margin-top: 8px;
-  margin-bottom: 10px;
+  margin-top: 4px;
+  margin-bottom: 6px;
 }
 
 .view > .section:first-child {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .section-title {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 4px;
-  color: #475569;
+  color: #1f2937;
 }
 
-/* ----- CARDS ----- */
+/* ---------- CARDS ---------- */
 
 .card {
   background: #ffffff;
   border-radius: 18px;
-  box-shadow:
-    0 8px 20px rgba(15, 23, 42, 0.06),
-    0 2px 6px rgba(15, 23, 42, 0.06);
-  padding: 12px 14px;
-  margin-bottom: 10px;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08),
+    0 1px 3px rgba(15, 23, 42, 0.12);
+  padding: 10px 12px;
+  margin-bottom: 8px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   gap: 6px;
 }
 
 .card-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
   line-height: 1.25;
   flex: 1;
   min-width: 0;
@@ -114,24 +115,23 @@ body {
 
 .card-value {
   font-size: 12px;
-  color: #4b5563;
+  color: #334155;
   white-space: nowrap;
   margin-left: 6px;
 }
 
-/* Generic low-key body layout used in a few places */
+/* ---------- SLIDERS ---------- */
+
 .slider-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
-
-/* ----- SLIDERS (used in settings / monthly etc.) ----- */
 
 .slider-row input[type="range"] {
   width: 100%;
   -webkit-appearance: none;
-  height: 22px;
+  height: 24px;
   background: transparent;
 }
 
@@ -141,13 +141,13 @@ body {
 
 .slider-row input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
-  background: linear-gradient(90deg, #5da8ff, #a4c8ff);
+  background: linear-gradient(90deg, #60a5fa, #a5b4fc);
   border-radius: 999px;
 }
 
 .slider-row input[type="range"]::-moz-range-track {
   height: 4px;
-  background: linear-gradient(90deg, #5da8ff, #a4c8ff);
+  background: linear-gradient(90deg, #60a5fa, #a5b4fc);
   border-radius: 999px;
 }
 
@@ -173,20 +173,19 @@ body {
 
 .slider-value-label {
   font-size: 11px;
-  color: #6b7280;
+  color: #64748b;
   text-align: right;
 }
 
-/* ----- RADAR CARD ----- */
+/* ---------- RADAR ---------- */
 
 .radar-wrapper {
   background: #ffffff;
-  border-radius: 22px;
-  box-shadow:
-    0 10px 26px rgba(15, 23, 42, 0.06),
-    0 1px 3px rgba(15, 23, 42, 0.08);
-  padding: 8px 10px 12px;
-  margin-bottom: 10px;
+  border-radius: 24px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(148, 163, 184, 0.16);
+  padding: 10px 8px 8px;
+  margin-bottom: 8px;
 }
 
 .radar-canvas-wrap {
@@ -200,7 +199,7 @@ body {
   display: block;
 }
 
-/* Small descriptor text */
+/* ---------- SMALL TEXT ---------- */
 
 .small-note {
   font-size: 11px;
@@ -208,25 +207,25 @@ body {
   margin-top: 4px;
 }
 
-/* ----- SETTINGS FORM ELEMENTS ----- */
+/* ---------- SETTINGS ---------- */
 
 .settings-group {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .settings-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .settings-row input,
 .settings-row select {
   flex: 1;
   border-radius: 10px;
-  border: 1px solid #cbd5f1;
-  padding: 6px 8px;
+  border: 1px solid #cbd5f5;
+  padding: 7px 9px;
   font-size: 12px;
   background: #f9fafb;
 }
@@ -248,38 +247,38 @@ body {
 
 .settings-hint {
   font-size: 11px;
-  color: #6b7280;
-  margin-bottom: 6px;
+  color: #64748b;
+  margin-bottom: 4px;
 }
 
-/* ----- BUTTONS / CHIPS ----- */
+/* ---------- BUTTONS ---------- */
 
 .btn {
   border: none;
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   font-size: 12px;
-  background: #5da8ff;
+  background: #3b82f6;
   color: #ffffff;
 }
 
 .btn.outline {
-  background: transparent;
-  color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
   border: 1px solid #bfdbfe;
 }
 
-/* ----- TOAST ----- */
+/* ---------- TOAST ---------- */
 
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 74px;
+  bottom: 72px;
   transform: translateX(-50%);
   background: #111827;
   color: #ffffff;
   font-size: 12px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
   opacity: 0;
@@ -293,14 +292,14 @@ body {
   transform: translateX(-50%) translateY(-4px);
 }
 
-/* ----- TABBAR ----- */
+/* ---------- TAB BAR ---------- */
 
 .tabbar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 6px 10px 10px;
+  padding: 4px 10px 10px;
   z-index: 40;
 }
 
@@ -308,9 +307,8 @@ body {
   max-width: 480px;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 22px;
-  box-shadow:
-    0 16px 30px rgba(15, 23, 42, 0.18),
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16),
     0 0 0 1px rgba(148, 163, 184, 0.25);
   backdrop-filter: blur(16px);
   display: flex;
@@ -338,12 +336,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   transition: background 0.16s ease, transform 0.16s ease;
 }
 
 .tab-icon {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -353,7 +351,7 @@ body {
 }
 
 .tab-btn.active .tab-pill {
-  background: rgba(93, 168, 255, 0.16);
+  background: rgba(37, 99, 235, 0.16);
   transform: translateY(-1px);
 }
 
@@ -368,7 +366,7 @@ body {
   }
 }
 
-/* ----- INSIGHTS ----- */
+/* ---------- INSIGHTS ---------- */
 
 .insights-stack {
   display: flex;
@@ -384,8 +382,8 @@ body {
 }
 
 .insights-label {
-  font-size: 13px;
-  color: #111827;
+  font-size: 12px;
+  color: #0f172a;
 }
 
 .insights-score {
@@ -404,24 +402,21 @@ body {
   margin-top: 2px;
 }
 
-/* ----- TODAY VIEW ----- */
+/* ---------- TODAY ---------- */
 
 .today-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-/* Nudge styling */
+/* Nudge */
+
 .nudge-message {
-  font-size: 13px;
+  font-size: 12px;
   color: #111827;
-  margin-top: 4px;
-  padding-left: 10px;
-  border-left: 3px solid #fecaca; /* default; corrected/overridden by type chip colours */
+  margin-top: 2px;
 }
-
-/* Nudge type chips */
 
 .nudge-type-chip {
   font-size: 10px;
@@ -449,46 +444,14 @@ body {
   border-color: #fecaca;
 }
 
-/* Domain badges (used in other views too) */
-
-.badge-neglect {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  margin-left: 6px;
-  border: 1px solid transparent;
-}
-
-.badge-none {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #bbf7d0;
-}
-
-.badge-medium {
-  background: #fef9c3;
-  color: #854d0e;
-  border-color: #fde68a;
-}
-
-.badge-serious {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-
-/* ----- TASKS (TODAY) ----- */
+/* ---------- TASKS (TODAY) ---------- */
 
 .task-group-title {
   font-size: 11px;
   font-weight: 600;
   color: #475569;
   margin-top: 4px;
-  margin-bottom: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #eef2ff;
-  display: inline-block;
+  margin-bottom: 2px;
 }
 
 .task-stack {
@@ -501,8 +464,8 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  font-size: 13px;
-  color: #111827;
+  font-size: 12px;
+  color: #0f172a;
 }
 
 .task-checkbox {
@@ -517,25 +480,24 @@ body {
 }
 
 .task-label {
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .task-meta {
   font-size: 11px;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .task-domain-chip {
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 999px;
-  background: #eef2ff;
+  background: #eff6ff;
   color: #1d4ed8;
   display: inline-block;
-  margin-top: 3px;
-  border: 1px solid #d4d8ff;
+  margin-top: 1px;
 }
 
 .task-done .task-label {
@@ -547,7 +509,7 @@ body {
   color: #9ca3af;
 }
 
-/* ----- MY TASKS (TEMPLATES) ----- */
+/* ---------- TEMPLATES (Settings → My tasks) ---------- */
 
 .template-sub-card {
   margin-top: 6px;
@@ -558,7 +520,7 @@ body {
 .template-sub-title {
   font-size: 12px;
   font-weight: 500;
-  color: #111827;
+  color: #0f172a;
   margin-bottom: 2px;
 }
 
@@ -572,7 +534,7 @@ body {
 .template-textarea {
   width: 100%;
   border-radius: 10px;
-  border: 1px solid #cbd5f1;
+  border: 1px solid #cbd5f5;
   padding: 4px 6px;
   font-size: 11px;
   resize: vertical;
@@ -580,23 +542,19 @@ body {
   background: #f9fafb;
 }
 
-/* ----- LOG VIEW ----- */
+/* ---------- LOG VIEW ---------- */
 
 #logContent .section {
-  margin-bottom: 8px;
+  margin-top: 2px;
 }
 
 #logContent select,
-#logContent input {
+#logContent input[type="text"] {
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid #cbd5f1;
-  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  padding: 7px 10px;
   font-size: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   background: #f9fafb;
-}
-
-#logContent .btn {
-  margin-top: 4px;
 }
