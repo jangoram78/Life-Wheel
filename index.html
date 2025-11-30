@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Life Wheel</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app">
+    <!-- HEADER -->
     <div class="app-header">
-      <div class="app-title">Life Wheel</div>
+      <div class="app-title">Life<br>Wheel</div>
       <div class="app-subtitle" id="periodLabel"></div>
     </div>
 
     <!-- TODAY VIEW -->
     <div id="todayView" class="view active">
-      <!-- Weekly radar moved here as the top panel -->
+      <!-- Radar card lives in its own section above the dynamic content -->
       <div class="section">
         <div class="radar-wrapper">
           <div class="radar-canvas-wrap">
@@ -32,7 +35,7 @@
     <!-- INSIGHTS VIEW -->
     <div id="insightsView" class="view">
       <div class="section">
-        <div class="section-title">Weekly & trend insights</div>
+        <div class="section-title">Insights</div>
         <div id="insightsContent"></div>
       </div>
     </div>
@@ -40,22 +43,18 @@
     <!-- LOG VIEW -->
     <div id="logView" class="view">
       <div class="section">
-        <div class="section-title">Log activity</div>
-        <div class="small-note">
-          Quickly log core daily actions and other activities straight into today’s Done list.
-        </div>
-      </div>
-      <div class="section">
+        <div class="section-title">Log</div>
         <div id="logContent"></div>
       </div>
     </div>
 
-    <!-- SETTINGS VIEW (includes Domains + My Tasks) -->
+    <!-- SETTINGS + MY TASKS VIEW -->
     <div id="settingsView" class="view">
       <div class="section">
         <div class="section-title">Domains</div>
         <div class="settings-hint">
-          You can rename domains and subdomains here. This structure drives the wheel, tasks, and insights.
+          Rename domains and subdomains here. This keeps your Life Wheel model and
+          tasks in sync.
         </div>
         <div id="settingsDomains"></div>
       </div>
@@ -63,10 +62,10 @@
       <div class="section">
         <div class="section-title">My task library</div>
         <div class="small-note">
-          Define your own micro / standard / deep tasks for each subdomain. One task per line.
-          The app will use these first when generating daily tasks.
+          Define micro / standard / deep tasks for each subdomain. One task per
+          line. The app will prioritise these when generating daily tasks.
         </div>
-        <div class="settings-row" style="margin-top:4px;">
+        <div class="settings-row" style="margin-top: 4px;">
           <select id="tasksDomainSelect"></select>
         </div>
         <div id="taskTemplatesContainer"></div>
@@ -77,16 +76,17 @@
         <div class="card">
           <div class="small-note">
             Data is stored locally on this device using your browser's storage
-            (IndexedDB via localForage). Clearing site data will reset your scores and tasks.
+            (IndexedDB / local storage). Clearing site data will reset your scores.
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Toast -->
   <div id="toast" class="toast">Saved ✓</div>
 
-  <!-- TAB BAR -->
+  <!-- TABBAR -->
   <div class="tabbar">
     <div class="tabbar-inner">
       <button class="tab-btn active" data-view="todayView">
@@ -97,7 +97,7 @@
       </button>
       <button class="tab-btn" data-view="insightsView">
         <div class="tab-pill">
-          <div class="tab-icon">📘</div>
+          <div class="tab-icon">📊</div>
           <div class="tab-label">Insights</div>
         </div>
       </button>
@@ -116,12 +116,15 @@
     </div>
   </div>
 
-  <!-- localForage for unified state persistence -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"
-          integrity="sha512-SHuw0kqLNVxCnjGaV9HVVVaFyqfZBFua5pWjexDzfrvkHTUiZxkgWzvfHWUV4OeTnAqP8C1QztQNl5w2vCqFcw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- localForage for state persistence -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"
+    integrity="sha512-SHuw0kqLNVxCnjGaV9HVVVaFyqfZBFua5pWjexDzfrvkHTUiZxkgWzvfHWUV4OeTnAqP8C1QztQNl5w2vCqFcw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer">
+  </script>
 
-  <!-- Engine + activities seeding + UI -->
+  <!-- Engine, activities seeding, and UI -->
   <script src="engine.js"></script>
   <script src="activities.js"></script>
   <script src="ui.js"></script>
